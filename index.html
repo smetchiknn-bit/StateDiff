@@ -289,6 +289,7 @@
         let fileNameAfter = "";
         let checksums = { before: { smr: 0, tmc: 0, total: 0 }, after: { smr: 0, tmc: 0, total: 0 } };
 
+        // Форматтер для экрана (русская локаль)
         const fmtMoney = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
         function handleFileSelect(input, type) {
@@ -562,7 +563,7 @@
                 { key: 'diff', width: 13 }    // J
             ];
 
-            // Цвета (ARGB)
+            // Цвета (ARGB) - уточненные
             const C_WAS = 'FFFFCC'; 
             const C_BECAME = 'FFCCFFCC';
             const C_DIFF_HEADER = 'FFFF0000'; 
@@ -695,7 +696,8 @@
                     cellInfo(cell, style);
                     
                     if ([6, 9, 10].includes(i)) {
-                        cell.numFmt = "# ##0,00_ ;-# ##0,00";
+                        // ИСПРАВЛЕННЫЙ ФОРМАТ ДЛЯ РУССКОЙ ЛОКАЛИ
+                        cell.numFmt = '#,##0.00_ ;[Red]-#,##0.00';
                     }
                 }
                 currentRow++;
@@ -757,7 +759,10 @@
                     };
                     if (isNew) style.bg = null;
                     cellInfo(cell, style);
-                    if ([6, 9, 10].includes(i)) cell.numFmt = "# ##0,00_ ;-# ##0,00";
+                    if ([6, 9, 10].includes(i)) {
+                        // ИСПРАВЛЕННЫЙ ФОРМАТ ДЛЯ РУССКОЙ ЛОКАЛИ
+                        cell.numFmt = '#,##0.00_ ;[Red]-#,##0.00';
+                    }
                 }
                 currentRow++;
             });
@@ -811,7 +816,8 @@
         function setMoneyCell(ws, row, col, value) {
             const cell = ws.getCell(row, col);
             cell.value = value;
-            cell.numFmt = "# ##0,00_ ;-# ##0,00";
+            // ИСПРАВЛЕННЫЙ ФОРМАТ ДЛЯ РУССКОЙ ЛОКАЛИ
+            cell.numFmt = '#,##0.00_ ;[Red]-#,##0.00';
             cell.alignment = { horizontal: 'right', vertical: 'middle' };
             cell.border = {
                 top: {style: 'thin', color: {argb: 'FF000000'}},
