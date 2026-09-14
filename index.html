@@ -2,13 +2,14 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8" />
+    <!-- Подключение иконки favicon -->
     <link rel="icon" type="image/png" href="./FSKicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Форма БылоСтало (для СУ)</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- XLSX Library -->
+    <!-- Библиотека для работы с Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
@@ -27,7 +28,7 @@
             flex-direction: column;
         }
 
-        /* Анимации */
+        /* Анимация плавающих элементов */
         @keyframes float {
             0% { transform: translateY(0px) rotate(0deg); }
             50% { transform: translateY(-10px) rotate(5deg); }
@@ -41,7 +42,7 @@
             pointer-events: none;
         }
 
-        /* Стили карточек и кнопок */
+        /* Стиль карточек */
         .card-shadow {
             box-shadow: 8px 8px 0px rgba(22, 163, 74, 0.2);
             border: 2px solid #166534;
@@ -51,6 +52,8 @@
             transform: translate(-2px, -2px);
             box-shadow: 10px 10px 0px rgba(22, 163, 74, 0.3);
         }
+
+        /* Кнопки */
         .btn-primary {
             background-color: #16a34a;
             color: white;
@@ -64,50 +67,47 @@
             box-shadow: 2px 2px 0px #14532d;
         }
 
-        /* Индикатор шагов */
+        /* Индикаторы шагов */
         .step-indicator { transition: all 0.3s; }
         .step-active { background-color: #16a34a; color: white; border-color: #14532d; }
         .step-completed { background-color: #14532d; color: white; border-color: #14532d; }
 
         /* Таблица */
-        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
         th {
             background-color: #dcfce7;
             color: #14532d;
             font-weight: 700;
             text-align: left;
-            padding: 10px;
-            border: 2px solid #166534;
+            padding: 12px;
+            border: 1px solid #166534;
             position: sticky;
             top: 0;
             z-index: 10;
-            white-space: nowrap;
         }
         td {
-            padding: 8px 10px;
+            padding: 8px 12px;
             border: 1px solid #bbf7d0;
             color: #166534;
+            vertical-align: middle;
         }
         
-        /* Специфические стили для строк Было/Стало/Разница */
-        .row-was { background-color: #f0fdf4; }
-        .row-became { background-color: #ffffff; }
-        .row-diff { 
-            background-color: #ecfccb; 
-            font-weight: 600;
-            border-top: 2px solid #84cc16;
-            border-bottom: 2px solid #84cc16;
+        /* Специфические стили для строк отчета (как в макросе) */
+        .row-was { background-color: #f0fdf4; } /* Было - светло зеленый */
+        .row-became { background-color: #ffffff; } /* Стало - белый */
+        .row-diff { background-color: #fef3c7; font-weight: 600; } /* Разница - желтоватый */
+        .row-total { 
+            background-color: #14532d !important; 
+            color: white !important; 
+            font-weight: bold; 
+            border-top: 2px solid #000;
         }
-        .row-total {
-            background-color: #14532d;
-            color: white;
-            font-weight: bold;
-        }
-        .row-total td { border-color: #166534; }
+        .row-total td { border-color: #000; color: white; }
 
         .text-pos { color: #16a34a; }
         .text-neg { color: #dc2626; }
-        
+
+        /* Скроллбар */
         ::-webkit-scrollbar { width: 10px; height: 10px; }
         ::-webkit-scrollbar-track { background: #f0fdf4; }
         ::-webkit-scrollbar-thumb { background: #16a34a; border-radius: 5px; border: 2px solid #f0fdf4; }
@@ -123,14 +123,15 @@
     <div class="container mx-auto px-4 py-8 relative z-10 flex-grow flex flex-col">
         
         <!-- Шапка -->
-        <header class="text-center mb-8">
-            <div class="flex justify-center items-center gap-4 mb-2">
-                <img src="./logo.png" alt="Логотип" class="h-14 w-auto object-contain">
-                <h1 class="text-3xl md:text-4xl font-bold text-green-900">
+        <header class="text-center mb-10">
+            <div class="flex justify-center items-center gap-6 mb-4">
+                <!-- Логотип без фона -->
+                <img src="./logo.png" alt="Логотип" class="h-20 w-auto object-contain drop-shadow-sm">
+                <h1 class="text-4xl md:text-5xl font-bold text-green-900 tracking-tight">
                     Форма БылоСтало (для СУ)
                 </h1>
             </div>
-            <p class="text-lg text-green-700 font-medium bg-white/60 inline-block px-4 py-1 rounded-full border border-green-300">
+            <p class="text-xl text-green-700 font-medium bg-white/70 inline-block px-6 py-2 rounded-full border border-green-300 shadow-sm">
                 Мастер сравнения КЕР и ТМЦ
             </p>
         </header>
@@ -139,108 +140,112 @@
         <div class="max-w-4xl mx-auto w-full mb-8">
             <div class="flex justify-between items-center relative">
                 <div class="absolute top-1/2 left-0 w-full h-1 bg-green-200 -z-10 rounded"></div>
-                <div id="step1" class="step-indicator w-8 h-8 rounded-full border-2 border-green-600 bg-white flex items-center justify-center font-bold text-green-700 step-active text-sm">1</div>
-                <div id="step2" class="step-indicator w-8 h-8 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center font-bold text-gray-400 text-sm">2</div>
-                <div id="step3" class="step-indicator w-8 h-8 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center font-bold text-gray-400 text-sm">3</div>
-                <div id="step4" class="step-indicator w-8 h-8 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center font-bold text-gray-400 text-sm">4</div>
+                <div id="step1-indicator" class="step-indicator w-10 h-10 rounded-full border-2 border-green-600 bg-white flex items-center justify-center font-bold text-green-700 step-active">1</div>
+                <div id="step2-indicator" class="step-indicator w-10 h-10 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center font-bold text-gray-400">2</div>
+                <div id="step3-indicator" class="step-indicator w-10 h-10 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center font-bold text-gray-400">3</div>
+                <div id="step4-indicator" class="step-indicator w-10 h-10 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center font-bold text-gray-400">4</div>
             </div>
-            <div class="flex justify-between mt-2 text-xs font-bold text-green-800 uppercase">
-                <span>Загрузка</span><span>Обработка</span><span>Сводка</span><span>Отчет</span>
+            <div class="flex justify-between mt-2 text-xs font-semibold text-green-800 uppercase tracking-wide">
+                <span>Загрузка</span><span>Обработка</span><span>Сравнение</span><span>Отчет</span>
             </div>
         </div>
 
         <main class="flex-grow max-w-7xl mx-auto w-full">
             
-            <!-- Экран загрузки -->
-            <div id="upload-screen" class="grid md:grid-cols-2 gap-6">
-                <!-- БЫЛО -->
-                <div class="card-shadow bg-white rounded-xl p-6 flex flex-col items-center justify-center text-center h-64 hover:bg-green-50 cursor-pointer relative group" onclick="document.getElementById('file-before').click()">
+            <!-- Экран загрузки файлов -->
+            <div id="upload-screen" class="grid md:grid-cols-2 gap-8">
+                <!-- Блок БЫЛО -->
+                <div class="card-shadow bg-white rounded-xl p-8 flex flex-col items-center justify-center text-center h-80 hover:bg-green-50 cursor-pointer relative group" onclick="document.getElementById('file-before').click()">
                     <input type="file" id="file-before" class="hidden" accept=".xlsx, .xls" onchange="handleFileSelect(this, 'before')">
-                    <div class="absolute inset-0 border-4 border-dashed border-green-300 rounded-xl m-2 pointer-events-none group-hover:border-green-500"></div>
-                    <svg class="w-12 h-12 text-green-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                    <h3 class="text-xl font-bold text-green-900">Файл "БЫЛО"</h3>
-                    <p class="text-sm text-green-600 mt-1">Перетащите или кликните</p>
-                    <div id="status-before" class="mt-3 hidden px-3 py-1 bg-green-100 text-green-800 rounded text-xs font-bold">✓ Загружен</div>
+                    <div class="absolute inset-0 border-4 border-dashed border-green-300 rounded-xl m-2 pointer-events-none group-hover:border-green-500 transition-colors"></div>
+                    <svg class="w-16 h-16 text-green-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    <h3 class="text-2xl font-bold text-green-900 mb-2">Файл "БЫЛО"</h3>
+                    <p class="text-green-600">Перетащите или кликните</p>
+                    <div id="status-before" class="mt-4 hidden px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold"></div>
                 </div>
 
-                <!-- СТАЛО -->
-                <div class="card-shadow bg-white rounded-xl p-6 flex flex-col items-center justify-center text-center h-64 hover:bg-green-50 cursor-pointer relative group" onclick="document.getElementById('file-after').click()">
+                <!-- Блок СТАЛО -->
+                <div class="card-shadow bg-white rounded-xl p-8 flex flex-col items-center justify-center text-center h-80 hover:bg-green-50 cursor-pointer relative group" onclick="document.getElementById('file-after').click()">
                     <input type="file" id="file-after" class="hidden" accept=".xlsx, .xls" onchange="handleFileSelect(this, 'after')">
-                    <div class="absolute inset-0 border-4 border-dashed border-green-300 rounded-xl m-2 pointer-events-none group-hover:border-green-500"></div>
-                    <svg class="w-12 h-12 text-blue-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                    <h3 class="text-xl font-bold text-green-900">Файл "СТАЛО"</h3>
-                    <p class="text-sm text-green-600 mt-1">Перетащите или кликните</p>
-                    <div id="status-after" class="mt-3 hidden px-3 py-1 bg-blue-100 text-blue-800 rounded text-xs font-bold">✓ Загружен</div>
+                    <div class="absolute inset-0 border-4 border-dashed border-green-300 rounded-xl m-2 pointer-events-none group-hover:border-green-500 transition-colors"></div>
+                    <svg class="w-16 h-16 text-blue-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    <h3 class="text-2xl font-bold text-green-900 mb-2">Файл "СТАЛО"</h3>
+                    <p class="text-green-600">Перетащите или кликните</p>
+                    <div id="status-after" class="mt-4 hidden px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold"></div>
                 </div>
             </div>
 
-            <div id="action-area" class="text-center mt-8 hidden">
-                <button onclick="processFiles()" class="btn-primary px-8 py-3 rounded-lg text-lg uppercase tracking-wider">
-                    Сформировать отчет
+            <!-- Кнопка запуска -->
+            <div id="action-area" class="text-center mt-10 hidden">
+                <button onclick="processFiles()" class="btn-primary px-10 py-4 rounded-lg text-lg uppercase tracking-wider hover:bg-green-600">
+                    Сравнить данные
                 </button>
-                <p class="mt-3 text-xs text-green-700 flex items-center justify-center gap-2">
+                <p class="mt-4 text-sm text-green-700 flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                     Локальная обработка. Данные не покидают браузер.
                 </p>
             </div>
 
             <!-- Загрузка -->
-            <div id="loading-screen" class="hidden text-center py-16">
-                <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent mb-4"></div>
-                <h3 class="text-xl font-bold text-green-800">Сведение данных...</h3>
+            <div id="loading-screen" class="hidden text-center py-20">
+                <div class="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-600 mb-4"></div>
+                <h3 class="text-2xl font-bold text-green-800">Анализ данных...</h3>
+                <p class="text-green-600">Сопоставление кодов и расчет разниц</p>
             </div>
 
             <!-- Результаты -->
             <div id="results-screen" class="hidden space-y-6">
                 
-                <!-- Карточки итогов -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-white p-4 rounded border-2 border-green-200 shadow-sm">
-                        <p class="text-xs text-gray-500 uppercase font-bold">Общая разница</p>
-                        <p id="grand-total-diff" class="text-2xl font-bold text-blue-700">0 ₽</p>
+                <!-- Сводка -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-lg border-2 border-green-200 shadow-sm">
+                        <p class="text-sm text-gray-500 uppercase font-bold">Позиций всего</p>
+                        <p id="total-count" class="text-3xl font-bold text-green-800">0</p>
                     </div>
-                    <div class="bg-white p-4 rounded border-2 border-green-200 shadow-sm">
-                        <p class="text-xs text-gray-500 uppercase font-bold">Изменено позиций</p>
-                        <p id="changed-count" class="text-2xl font-bold text-orange-600">0</p>
+                    <div class="bg-white p-6 rounded-lg border-2 border-green-200 shadow-sm">
+                        <p class="text-sm text-gray-500 uppercase font-bold">Изменено позиций</p>
+                        <p id="changed-count" class="text-3xl font-bold text-orange-600">0</p>
                     </div>
-                    <div class="bg-white p-4 rounded border-2 border-green-200 shadow-sm">
-                        <p class="text-xs text-gray-500 uppercase font-bold">Всего строк в отчете</p>
-                        <p id="total-rows" class="text-2xl font-bold text-green-800">0</p>
+                    <div class="bg-white p-6 rounded-lg border-2 border-green-200 shadow-sm">
+                        <p class="text-sm text-gray-500 uppercase font-bold">Итоговая разница</p>
+                        <p id="total-diff" class="text-3xl font-bold text-blue-600">0 ₽</p>
                     </div>
                 </div>
 
-                <!-- Таблица -->
+                <!-- Таблица отчета -->
                 <div class="bg-white rounded-xl shadow-lg border-2 border-green-800 overflow-hidden">
-                    <div class="bg-green-900 text-white px-6 py-3 flex justify-between items-center">
-                        <h3 class="text-lg font-bold">Детальный отчет (Было / Стало / Разница)</h3>
-                        <button onclick="exportToExcel()" class="bg-white text-green-900 px-4 py-1.5 rounded font-bold text-sm hover:bg-green-100 border border-green-300">
+                    <div class="bg-green-900 text-white px-6 py-4 flex justify-between items-center">
+                        <h3 class="text-xl font-bold">Отчет "Было-Стало"</h3>
+                        <button onclick="exportToExcel()" class="bg-white text-green-900 px-4 py-2 rounded font-bold text-sm hover:bg-green-100 transition flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                             Скачать Excel
                         </button>
                     </div>
                     
-                    <div class="overflow-x-auto max-h-[600px]">
-                        <table id="report-table">
+                    <div class="overflow-x-auto max-h-[700px]">
+                        <table id="results-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 5%">№</th>
                                     <th style="width: 10%">Тип</th>
                                     <th style="width: 15%">Код</th>
-                                    <th style="width: 30%">Наименование</th>
-                                    <th style="width: 8%">Ед.</th>
-                                    <th style="width: 8%">Кол-во</th>
-                                    <th style="width: 12%">Сумма</th>
-                                    <th style="width: 12%">Статус</th>
+                                    <th style="width: 35%">Наименование</th>
+                                    <th style="width: 10%">Ед.</th>
+                                    <th style="width: 10%" class="text-right">Кол-во</th>
+                                    <th style="width: 15%" class="text-right">Сумма</th>
+                                    <th style="width: 5%" class="text-center">Статус</th>
                                 </tr>
                             </thead>
-                            <tbody id="report-body">
-                                <!-- Rows generated by JS -->
+                            <tbody id="results-body">
+                                <!-- Данные генерируются JS -->
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <div class="text-center pb-8">
-                    <button onclick="location.reload()" class="text-green-700 underline hover:text-green-900 font-medium">Начать заново</button>
+                <div class="text-center pb-10">
+                    <button onclick="resetApp()" class="text-green-700 underline hover:text-green-900 font-medium">
+                        Начать заново
+                    </button>
                 </div>
             </div>
 
@@ -250,72 +255,77 @@
     <script>
         let dataBefore = {};
         let dataAfter = {};
-        let reportRows = []; // Хранит финальную структуру отчета
+        let reportRows = []; // Массив строк отчета
 
         function handleFileSelect(input, type) {
             const file = input.files[0];
             if (!file) return;
 
-            document.getElementById(`status-${type}`).classList.remove('hidden');
-            document.getElementById(`status-${type}`).textContent = file.name.length > 20 ? file.name.substring(0, 20) + '...' : file.name;
+            const statusDiv = document.getElementById(`status-${type}`);
+            statusDiv.classList.remove('hidden');
+            statusDiv.textContent = file.name.length > 20 ? file.name.substring(0, 20) + '...' : file.name;
             
             updateStep(1, true);
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                const workbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
-                const result = {};
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
                 
+                const result = {};
                 ['СМР уник', 'ТМЦ уник'].forEach(sheetName => {
                     if (workbook.SheetNames.includes(sheetName)) {
-                        const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {header: 1});
+                        const worksheet = workbook.Sheets[sheetName];
+                        const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
                         result[sheetName] = parseSheet(json, sheetName);
-                    } else {
-                        result[sheetName] = {};
                     }
                 });
 
                 if (type === 'before') dataBefore = result;
                 else dataAfter = result;
 
-                if (Object.keys(dataBefore).length && Object.keys(dataAfter).length) {
-                    document.getElementById('action-area').classList.remove('hidden');
-                }
+                checkReady();
             };
             reader.readAsArrayBuffer(file);
         }
 
         function parseSheet(rows, sheetName) {
             const items = {};
-            // Предполагаем стандартную структуру: Код(0), Имя(1), Ед(2), Кол(3), Цена(4), Сумма(5)
-            // Если структура другая, можно добавить адаптацию, но пока берем жестко по индексам
+            // Предполагаем структуру: Код(0), Наименование(1), Ед(2), Кол-во(3), Цена(4), Сумма(5)
+            // Если структура другая, можно адаптировать индексы
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
-                if (!row || !row[0]) continue;
+                if (!row || row.length === 0) continue;
                 
-                const code = String(row[0]).trim();
-                const qty = parseFloat(row[3]) || 0;
-                const price = parseFloat(row[4]) || 0;
-                const sum = parseFloat(row[5]) || (qty * price);
+                let code = row[0];
+                if (!code) continue;
+                code = String(code).trim();
 
                 items[code] = {
                     code: code,
                     name: row[1] || '',
                     unit: row[2] || '',
-                    qty: qty,
-                    sum: sum,
+                    qty: parseFloat(row[3]) || 0,
+                    price: parseFloat(row[4]) || 0,
+                    sum: parseFloat(row[5]) || 0,
                     type: sheetName.includes('СМР') ? 'КЕР' : 'ТМЦ'
                 };
             }
             return items;
         }
 
-        function updateStep(step, done) {
+        function checkReady() {
+            if (Object.keys(dataBefore).length > 0 && Object.keys(dataAfter).length > 0) {
+                document.getElementById('action-area').classList.remove('hidden');
+            }
+        }
+
+        function updateStep(stepNum, completed) {
             for(let i=1; i<=4; i++) {
-                const el = document.getElementById(`step${i}`);
-                el.className = "step-indicator w-8 h-8 rounded-full border-2 bg-white flex items-center justify-center font-bold text-sm transition-all";
-                if (i < step || (i === step && done)) el.classList.add('step-completed');
-                else if (i === step && !done) el.classList.add('step-active');
+                const el = document.getElementById(`step${i}-indicator`);
+                el.className = "step-indicator w-10 h-10 rounded-full border-2 bg-white flex items-center justify-center font-bold transition-all duration-300";
+                if (i < stepNum || (i === stepNum && completed)) el.classList.add('step-completed');
+                else if (i === stepNum && !completed) el.classList.add('step-active');
                 else el.classList.add('border-gray-300', 'text-gray-400');
             }
         }
@@ -327,243 +337,255 @@
             document.getElementById('loading-screen').classList.remove('hidden');
 
             setTimeout(() => {
-                generateReportData();
+                generateReport();
                 updateStep(2, true);
                 updateStep(3, true);
                 updateStep(4, true);
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('results-screen').classList.remove('hidden');
                 renderTable();
-            }, 600);
+            }, 800);
         }
 
-        function generateReportData() {
+        function generateReport() {
             reportRows = [];
-            let grandDiff = 0;
+            const types = ['КЕР', 'ТМЦ'];
+            let grandTotalWas = 0;
+            let grandTotalBecame = 0;
+            let grandTotalDiff = 0;
             let changedCount = 0;
 
-            // Обрабатываем сначала КЕР, потом ТМЦ
-            ['СМР уник', 'ТМЦ уник'].forEach(sheetKey => {
-                const beforeItems = dataBefore[sheetKey] || {};
-                const afterItems = dataAfter[sheetKey] || {};
-                const typeName = sheetKey.includes('СМР') ? 'КЕР' : 'ТМЦ';
+            types.forEach(type => {
+                const sheetNameBefore = type === 'КЕР' ? 'СМР уник' : 'ТМЦ уник';
+                const sheetNameAfter = type === 'КЕР' ? 'СМР уник' : 'ТМЦ уник';
                 
-                // Собираем все уникальные коды
-                const allCodes = new Set([...Object.keys(beforeItems), ...Object.keys(afterItems)]);
+                const dataB = dataBefore[sheetNameBefore] || {};
+                const dataA = dataAfter[sheetNameAfter] || {};
+                
+                const allCodes = new Set([...Object.keys(dataB), ...Object.keys(dataA)]);
                 const sortedCodes = Array.from(allCodes).sort();
 
-                let sectionSumBefore = 0;
-                let sectionSumAfter = 0;
+                let sectionTotalWas = 0;
+                let sectionTotalBecame = 0;
+                let sectionTotalDiff = 0;
+
+                // Добавляем заголовок раздела в отчет (визуально в таблице можно скрыть или выделить)
+                reportRows.push({ isSectionHeader: true, text: `=== ${type} ===` });
 
                 sortedCodes.forEach(code => {
-                    const b = beforeItems[code];
-                    const a = afterItems[code];
+                    const itemB = dataB[code];
+                    const itemA = dataA[code];
 
-                    const sumB = b ? b.sum : 0;
-                    const sumA = a ? a.sum : 0;
+                    const qtyB = itemB ? itemB.qty : 0;
+                    const sumB = itemB ? itemB.sum : 0;
+                    const qtyA = itemA ? itemA.qty : 0;
+                    const sumA = itemA ? itemA.sum : 0;
                     const diff = sumA - sumB;
 
-                    sectionSumBefore += sumB;
-                    sectionSumAfter += sumA;
-                    grandDiff += diff;
+                    sectionTotalWas += sumB;
+                    sectionTotalBecame += sumA;
+                    sectionTotalDiff += diff;
+
                     if (diff !== 0) changedCount++;
 
-                    const name = (a ? a.name : b.name);
-                    const unit = (a ? a.unit : b.unit);
-                    
+                    const name = itemA ? itemA.name : (itemB ? itemB.name : '');
+                    const unit = itemA ? itemA.unit : (itemB ? itemB.unit : '');
+
                     // Строка БЫЛО
                     reportRows.push({
-                        type: 'was',
-                        label: 'Было',
-                        code: code,
-                        name: name,
-                        unit: unit,
-                        qty: b ? b.qty : 0,
-                        sum: sumB,
-                        diff: 0,
-                        status: '-',
-                        sectionType: typeName
+                        type: type, code: code, name: name, unit: unit,
+                        qty: qtyB, sum: sumB, label: 'Было', rowClass: 'row-was', isChange: false
                     });
-
                     // Строка СТАЛО
                     reportRows.push({
-                        type: 'became',
-                        label: 'Стало',
-                        code: code,
-                        name: name,
-                        unit: unit,
-                        qty: a ? a.qty : 0,
-                        sum: sumA,
-                        diff: 0,
-                        status: '-',
-                        sectionType: typeName
+                        type: type, code: code, name: name, unit: unit,
+                        qty: qtyA, sum: sumA, label: 'Стало', rowClass: 'row-became', isChange: false
                     });
-
                     // Строка РАЗНИЦА
-                    let statusText = 'Без изм.';
-                    let statusClass = '';
-                    if (!b && a) { statusText = 'Добавлено'; statusClass = 'text-pos'; }
-                    else if (b && !a) { statusText = 'Удалено'; statusClass = 'text-neg'; }
-                    else if (diff > 0) { statusText = '+ Увеличение'; statusClass = 'text-pos'; }
-                    else if (diff < 0) { statusText = '- Уменьшение'; statusClass = 'text-neg'; }
-
+                    let statusIcon = '';
+                    if (diff > 0) statusIcon = '▲';
+                    else if (diff < 0) statusIcon = '▼';
+                    
                     reportRows.push({
-                        type: 'diff',
-                        label: 'Разница',
-                        code: code,
-                        name: name,
-                        unit: unit,
-                        qty: (a ? a.qty : 0) - (b ? b.qty : 0),
-                        sum: diff,
-                        diff: diff,
-                        status: statusText,
-                        statusClass: statusClass,
-                        sectionType: typeName
+                        type: type, code: code, name: '', unit: '',
+                        qty: qtyA - qtyB, sum: diff, label: 'Разница', rowClass: 'row-diff', 
+                        diffVal: diff, statusIcon: statusIcon, isChange: (diff !== 0)
                     });
                 });
 
                 // ИТОГО по разделу
-                const totalDiffSection = sectionSumAfter - sectionSumBefore;
                 reportRows.push({
-                    type: 'total',
-                    label: `ВСЕГО ${typeName}`,
-                    code: '',
-                    name: `Итого по разделу ${typeName}`,
-                    unit: '',
-                    qty: 0, // Сумму количеств обычно не считают в таких отчетах, но можно добавить если нужно
-                    sum: totalDiffSection, // В колонке суммы пишем разницу итогов? Или сами итоги?
-                    // Согласно запросу: "Было Всего - Стало Всего - разница".
-                    // Значит в таблице итогов нужны 3 строки или одна сводная?
-                    // Макрос обычно делает: Строка "ВСЕГО КЕР" где показаны суммы.
-                    // Давайте сделаем 3 строки итогов аналогично позициям для наглядности, 
-                    // НО чаще в Excel делают просто финальную строку с разницей.
-                    // Реализуем как одну строку "ВСЕГО РАЗНИЦА" для компактности, 
-                    // либо 3 строки как просили в описании логики.
-                    // Сделаем 3 строки итогов для полной симметрии с макросом.
-                    isSectionTotal: true,
-                    sectionSumBefore: sectionSumBefore,
-                    sectionSumAfter: sectionSumAfter,
-                    sectionDiff: totalDiffSection
+                    isTotal: true, type: type, 
+                    text: `ВСЕГО ${type}`,
+                    sumWas: sectionTotalWas, sumBecame: sectionTotalBecame, sumDiff: sectionTotalDiff,
+                    rowClass: 'row-total'
                 });
+
+                grandTotalWas += sectionTotalWas;
+                grandTotalBecame += sectionTotalBecame;
+                grandTotalDiff += sectionTotalDiff;
             });
 
-            // Обновляем глобальные счетчики
-            document.getElementById('grand-total-diff').textContent = formatMoney(grandDiff);
-            document.getElementById('grand-total-diff').className = `text-2xl font-bold ${grandDiff >= 0 ? 'text-green-700' : 'text-red-600'}`;
+            // ОБЩИЙ ИТОГ
+            reportRows.push({
+                isTotal: true, type: 'ALL',
+                text: `ВСЕГО ОТЧЕТ`,
+                sumWas: grandTotalWas, sumBecame: grandTotalBecame, sumDiff: grandTotalDiff,
+                rowClass: 'row-total'
+            });
+
+            // Обновление сводки
+            document.getElementById('total-count').textContent = new Set(reportRows.filter(r => r.code).map(r => r.code)).size;
             document.getElementById('changed-count').textContent = changedCount;
-            document.getElementById('total-rows').textContent = reportRows.length;
+            
+            const diffEl = document.getElementById('total-diff');
+            diffEl.textContent = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(grandTotalDiff);
+            diffEl.className = `text-3xl font-bold ${grandTotalDiff >= 0 ? 'text-green-600' : 'text-red-600'}`;
         }
 
         function renderTable() {
-            const tbody = document.getElementById('report-body');
+            const tbody = document.getElementById('results-body');
             tbody.innerHTML = '';
-            let rowNum = 1;
 
-            reportRows.forEach((row, index) => {
-                // Обработка итогов раздела
-                if (row.isSectionTotal) {
-                    // Строка 1: Было Всего
-                    tbody.appendChild(createRowHTML(rowNum++, 'was', 'ВСЕГО', '', `Всего ${row.sectionType}`, '', 0, row.sectionSumBefore, '-', ''));
-                    // Строка 2: Стало Всего
-                    tbody.appendChild(createRowHTML(rowNum++, 'became', 'ВСЕГО', '', `Всего ${row.sectionType}`, '', 0, row.sectionSumAfter, '-', ''));
-                    // Строка 3: Разница Всего
-                    const diffClass = row.sectionDiff >= 0 ? 'text-pos' : 'text-neg';
-                    const sign = row.sectionDiff > 0 ? '+' : '';
-                    tbody.appendChild(createRowHTML(rowNum++, 'diff', 'РАЗНИЦА', '', `Всего ${row.sectionType}`, '', 0, row.sectionDiff, `${sign}${formatMoney(row.sectionDiff)}`, diffClass, true));
+            reportRows.forEach(row => {
+                const tr = document.createElement('tr');
+                
+                if (row.isSectionHeader) {
+                    tr.innerHTML = `<td colspan="7" class="bg-green-100 font-bold text-green-900 text-center py-2">${row.text}</td>`;
+                    tbody.appendChild(tr);
                     return;
                 }
 
-                const tr = document.createElement('tr');
-                tr.className = row.type === 'was' ? 'row-was' : (row.type === 'became' ? 'row-became' : 'row-diff');
-                
-                const sumFormatted = formatMoney(row.sum);
-                const diffFormatted = row.type === 'diff' ? (row.diff > 0 ? '+' : '') + formatMoney(row.diff) : '';
-                
-                // Скрываем некоторые колонки для строк "Разница", оставляя только суть, или показываем всё?
-                // По логике макроса: показываются все цифры.
-                
-                let cells = `
-                    <td class="text-gray-400 text-xs">${rowNum++}</td>
-                    <td class="font-bold text-xs">${row.sectionType}</td>
-                    <td class="font-mono text-xs">${row.code}</td>
-                    <td class="truncate max-w-xs" title="${row.name}">${row.name}</td>
-                    <td>${row.unit}</td>
-                    <td class="text-right">${row.qty.toLocaleString('ru-RU')}</td>
-                    <td class="text-right font-medium">${sumFormatted}</td>
-                    <td class="text-center font-bold ${row.statusClass || ''}">${row.status}</td>
-                `;
-                
-                tr.innerHTML = cells;
+                if (row.isTotal) {
+                    tr.className = row.rowClass;
+                    const fmt = (n) => new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+                    tr.innerHTML = `
+                        <td colspan="4" class="text-right pr-4">${row.text}</td>
+                        <td class="text-right"></td>
+                        <td class="text-right">${fmt(row.sumWas)}</td>
+                        <td class="text-right">${fmt(row.sumBecame)}</td>
+                        <td class="text-right">${fmt(row.sumDiff)}</td>
+                    `;
+                    // Для общих итогов структура чуть другая, чтобы влезло в 7 колонок
+                    // Пересоберем под 7 колонок таблицы: Тип, Код, Имя, Ед, Кол-во, Сумма, Статус
+                    // В макросе обычно: Было Сумма, Стало Сумма, Разница. 
+                    // Адаптируем под текущую сетку таблицы (7 колонок)
+                    
+                    // Переделаем HTML для Total строки под нашу сетку (Тип, Код, Наим, Ед, Кол, Сумма, Статус)
+                    // Но в нашей сетке всего одна колонка суммы. 
+                    // Давайте изменим рендеринг Total, чтобы он показывал 3 значения в ячейках или расширим таблицу?
+                    // Лучше покажем: Наименование="ВСЕГО...", Кол-во пустое, Сумма = Разница (итоговая), Статус = пусто
+                    // Или сделаем хитрее: 
+                    
+                    tr.innerHTML = `
+                        <td colspan="3" class="text-right font-bold text-lg">${row.text}</td>
+                        <td></td>
+                        <td class="text-right text-sm opacity-75">${fmt(row.sumWas)}</td>
+                        <td class="text-right font-bold text-lg">${fmt(row.sumDiff)}</td>
+                        <td class="text-center">${row.sumDiff > 0 ? '▲' : (row.sumDiff < 0 ? '▼' : '-')}</td>
+                    `;
+                    // Примечание: Для простоты в веб-таблице покажем только Итоговую разницу в основной колонке суммы,
+                    // а "Было" и "Стало" мелким шрифтом в колонке количества или объединим.
+                    // Вернемся к варианту: Колонка "Сумма" показывает Разницу (главное), а Было/Стало в title или доп колонках?
+                    // Нет, пользователь просил "Было Всего - Стало Всего - Разница".
+                    // Значит нам нужно 3 колонки для цифр в итоге.
+                    // Изменим структуру таблицы в HTML выше? Нет, сложно менять на лету.
+                    // Решение: В строке ВСЕГО мы используем colspan.
+                    
+                    tr.innerHTML = `
+                        <td colspan="4" class="text-right pr-2 font-bold">${row.text}</td>
+                        <td class="text-right text-xs opacity-80 border-r-0">${fmt(row.sumWas)}</td>
+                        <td class="text-right text-xs opacity-80 border-l-0 border-r-0">${fmt(row.sumBecame)}</td>
+                        <td class="text-right font-bold text-lg ${row.sumDiff >= 0 ? 'text-white' : 'text-red-200'}">${fmt(row.sumDiff)}</td>
+                    `;
+                     // Это не совсем ровно по колонкам. 
+                     // Давайте просто выведем: Наименование (colspan 3), Пусто, Было (мелко), Стало (мелко), Разница (крупно).
+                     // У нас 7 колонок.
+                     // 1(Type), 2(Code), 3(Name), 4(Unit), 5(Qty), 6(Sum), 7(Status).
+                     // Сделаем так: Colspan 4 на "ВСЕГО...", затем ячейка с Was, ячейка с Became, ячейка с Diff.
+                     tr.innerHTML = `
+                        <td colspan="4" class="text-right font-bold text-white">${row.text}</td>
+                        <td class="text-right text-xs text-green-200">${fmt(row.sumWas)}</td>
+                        <td class="text-right text-xs text-green-200">${fmt(row.sumBecame)}</td>
+                        <td class="text-right font-bold text-lg">${fmt(row.sumDiff)}</td>
+                     `;
+                } else {
+                    // Обычная строка
+                    tr.className = row.rowClass;
+                    const sumFmt = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(row.sum);
+                    const qtyFmt = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(row.qty);
+                    
+                    let diffColor = '';
+                    if (row.label === 'Разница') {
+                        if (row.diffVal > 0) diffColor = 'text-green-700';
+                        if (row.diffVal < 0) diffColor = 'text-red-600';
+                    }
+
+                    tr.innerHTML = `
+                        <td class="text-xs font-bold text-gray-500">${row.type}</td>
+                        <td class="font-mono text-xs">${row.code}</td>
+                        <td class="font-medium truncate max-w-xs" title="${row.name}">${row.name}</td>
+                        <td class="text-xs">${row.unit}</td>
+                        <td class="text-right font-mono text-xs">${qtyFmt}</td>
+                        <td class="text-right font-mono ${diffColor}">${sumFmt}</td>
+                        <td class="text-center text-lg">${row.statusIcon || (row.label === 'Разница' ? '•' : '')}</td>
+                    `;
+                }
                 tbody.appendChild(tr);
             });
         }
 
-        function createRowHTML(num, type, label, code, name, unit, qty, sum, statusText, statusClass, isTotal = false) {
-            const tr = document.createElement('tr');
-            tr.className = type === 'was' ? 'row-was' : (type === 'became' ? 'row-became' : 'row-diff');
-            if (isTotal) tr.classList.add('row-total'); // Особый стиль для итогов? Или оставим обычным
-            
-            // Для итоговых строк делаем жирнее
-            const weight = isTotal ? 'font-bold' : '';
-            
-            tr.innerHTML = `
-                <td class="text-xs ${isTotal ? 'text-green-200' : 'text-gray-400'}">${num}</td>
-                <td class="font-bold text-xs">${isTotal ? 'ИТОГ' : ''}</td>
-                <td class="${weight}">${label}</td>
-                <td class="${weight} truncate max-w-xs">${name}</td>
-                <td></td>
-                <td class="text-right"></td>
-                <td class="text-right font-bold">${formatMoney(sum)}</td>
-                <td class="text-center ${statusClass}">${statusText}</td>
-            `;
-            return tr;
-        }
-
-        function formatMoney(val) {
-            return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
-        }
-
         function exportToExcel() {
-            // Формируем данные точно как в макросе
-            const ws_data = [];
+            // Формируем данные точно как в макросе: Было, Стало, Разница отдельными строками или колонками?
+            // Пользователь сказал: "выводил все цифры в файлах Было КЕР-Стало КЕР; Было ТМЦ - Стало ТМЦ; Было Всего -Стало Всего; разница"
+            // Сделаем плоскую таблицу для Excel с группировкой
             
-            // Заголовок
-            ws_data.push([
-                "№", "Тип", "Код", "Наименование", "Ед.изм", "Кол-во", "Сумма", "Статус/Разница"
-            ]);
+            const ws_data = [
+                ["Тип", "Код", "Наименование", "Ед.изм", "Строка", "Кол-во", "Сумма", "Примечание"]
+            ];
 
-            let rowNum = 1;
             reportRows.forEach(row => {
-                if (row.isSectionTotal) {
-                    // 3 строки итогов
-                    ws_data.push([rowNum++, "ИТОГ", "ВСЕГО", `Всего ${row.sectionType}`, "", "", row.sectionSumBefore, "Было"]);
-                    ws_data.push([rowNum++, "ИТОГ", "ВСЕГО", `Всего ${row.sectionType}`, "", "", row.sectionSumAfter, "Стало"]);
-                    const diffSign = row.sectionDiff >= 0 ? "" : "-";
-                    ws_data.push([rowNum++, "ИТОГ", "РАЗНИЦА", `Всего ${row.sectionType}`, "", "", Math.abs(row.sectionDiff), diffSign + "Разница"]);
-                } else {
-                    ws_data.push([
-                        rowNum++,
-                        row.sectionType,
-                        row.code,
-                        row.name,
-                        row.unit,
-                        row.qty,
-                        row.sum,
-                        row.type === 'diff' ? row.status : (row.type === 'was' ? 'Было' : 'Стало')
-                    ]);
-                }
+                if (row.isSectionHeader || row.isTotal) return; // Итоги добавим отдельно в конце листов или оставим как есть
+                
+                ws_data.push([
+                    row.type,
+                    row.code,
+                    row.name,
+                    row.unit,
+                    row.label,
+                    row.qty,
+                    row.sum,
+                    row.label === 'Разница' ? (row.diffVal > 0 ? 'Увеличение' : (row.diffVal < 0 ? 'Уменьшение' : '')) : ''
+                ]);
+            });
+
+            // Добавим лист с Итогами
+            const totalsData = [
+                ["Раздел", "Было Всего", "Стало Всего", "Разница"]
+            ];
+            
+            // Пройдемся еще раз для итогов
+            let currentType = '';
+            let was = 0, became = 0, diff = 0;
+            
+            // Простой способ: взять данные из reportRows где isTotal
+            reportRows.filter(r => r.isTotal).forEach(r => {
+                totalsData.push([r.text, r.sumWas, r.sumBecame, r.sumDiff]);
             });
 
             const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(ws_data);
             
-            // Настройка ширины колонок
-            ws['!cols'] = [
-                {wch: 5}, {wch: 8}, {wch: 15}, {wch: 40}, {wch: 8}, {wch: 10}, {wch: 15}, {wch: 15}
-            ];
+            const wsDetail = XLSX.utils.aoa_to_sheet(ws_data);
+            XLSX.utils.book_append_sheet(wb, wsDetail, "Детально");
 
-            XLSX.utils.book_append_sheet(wb, ws, "Было-Стало");
-            XLSX.writeFile(wb, "Otchet_Bylo-Stalo.xlsx");
+            const wsTotals = XLSX.utils.aoa_to_sheet(totalsData);
+            XLSX.utils.book_append_sheet(wb, wsTotals, "Итоги");
+
+            XLSX.writeFile(wb, "StateDiff_Report.xlsx");
+        }
+
+        function resetApp() {
+            location.reload();
         }
     </script>
 </body>
