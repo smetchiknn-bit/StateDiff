@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StateDiff - Сравнение смет</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="FSKicon.png">
+    <!-- Tailwind CSS (через CDN для работы без сборки) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS для чтения Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Иконки -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Фирменный стиль: Миллиметровка и Зеленая гамма */
+        body {
+            background-color: #f0fdf4;
+            background-image: 
+                linear-gradient(#dcfce7 1px, transparent 1px),
+                linear-gradient(90deg, #dcfce7 1px, transparent 1px);
+            background-size: 20px 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #14532d;
+        }
+
+        .card {
+            background: white;
+            border: 2px solid #166534;
+            box-shadow: 4px 4px 0px #166534;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #16a34a;
+            color: white;
+            border: 2px solid #14532d;
+            box-shadow: 2px 2px 0px #14532d;
+            font-weight: bold;
+            transition: all 0.1s;
+        }
+
+        .btn-primary:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px #14532d;
+        }
+
+        .btn-secondary {
+            background-color: #ffffff;
+            color: #166534;
+            border: 2px solid #166534;
+            box-shadow: 2px 2px 0px #14532d;
+            font-weight: bold;
+            transition: all 0.1s;
+        }
+
+        .btn-secondary:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px #14532d;
+        }
+
+        /* Анимация плавающих элементов */
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        .floating-icon {
+            animation: float 3s ease-in-out infinite;
+            position: absolute;
+            opacity: 0.1;
+            z-index: 0;
+            color: #166534;
+            font-size: 4rem;
+        }
+
+        .table-container {
+            max-height: 60vh;
+            overflow-y: auto;
+            border: 2px solid #166534;
+            border-radius: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background-color: #dcfce7;
+            color: #14532d;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid #166534;
+            padding: 8px;
+            text-align: left;
+            font-size: 0.85rem;
+        }
+
+        td {
+            border-bottom: 1px solid #bbf7d0;
+            padding: 6px 8px;
+            font-size: 0.85rem;
+        }
+
+        tr:hover {
+            background-color: #f0fdf4;
+        }
+
+        .diff-positive { color: #16a34a; font-weight: bold; }
+        .diff-negative { color: #dc2626; font-weight: bold; }
+        .diff-zero { color: #6b7280; }
+
+        /* Скроллбар */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f0fdf4; }
+        ::-webkit-scrollbar-thumb { background: #16a34a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #15803d; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 relative overflow-x-hidden">
+
+    <!-- Декоративные элементы -->
+    <i class="fa-solid fa-calculator floating-icon" style="top: 10%; left: 5%;"></i>
+    <i class="fa-solid fa-file-invoice-dollar floating-icon" style="top: 20%; right: 10%; animation-delay: 1s;"></i>
+    <i class="fa-solid fa-chart-line floating-icon" style="bottom: 15%; left: 15%; animation-delay: 2s;"></i>
+
+    <!-- Логотип и Заголовок -->
+    <div class="w-full max-w-6xl mb-6 flex items-center gap-4 z-10">
+        <img src="logo.png" alt="Стикер Лого" class="h-16 w-auto object-contain drop-shadow-md">
+        <div>
+            <h1 class="text-3xl font-bold text-green-900 tracking-tight">StateDiff</h1>
+            <p class="text-green-700 text-sm font-medium">Инструмент сравнения сметных данных</p>
+        </div>
+    </div>
+
+    <!-- Основной контейнер -->
+    <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-6 z-10">
+        
+        <!-- Левая панель: Загрузка файлов -->
+        <div class="lg:col-span-4 space-y-4">
+            <div class="card p-5">
+                <h2 class="text-xl font-bold mb-4 border-b-2 border-green-200 pb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-upload"></i> 1. Загрузка файлов
+                </h2>
+                
+                <div class="space-y-4">
+                    <div class="border-2 border-dashed border-green-300 rounded-lg p-4 bg-green-50 hover:bg-green-100 transition cursor-pointer relative">
+                        <input type="file" id="fileBefore" accept=".xlsx, .xls" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleFileSelect(this, 'before')">
+                        <div class="text-center">
+                            <i class="fa-solid fa-file-excel text-3xl text-green-600 mb-2"></i>
+                            <p class="font-bold text-green-800">Файл "БЫЛО"</p>
+                            <p class="text-xs text-green-600 mt-1" id="nameBefore">Перетащите или кликните</p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-center">
+                        <i class="fa-solid fa-arrow-down text-green-400 animate-bounce"></i>
+                    </div>
+
+                    <div class="border-2 border-dashed border-green-300 rounded-lg p-4 bg-green-50 hover:bg-green-100 transition cursor-pointer relative">
+                        <input type="file" id="fileAfter" accept=".xlsx, .xls" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleFileSelect(this, 'after')">
+                        <div class="text-center">
+                            <i class="fa-solid fa-file-excel text-3xl text-green-600 mb-2"></i>
+                            <p class="font-bold text-green-800">Файл "СТАЛО"</p>
+                            <p class="text-xs text-green-600 mt-1" id="nameAfter">Перетащите или кликните</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="processFiles()" class="w-full mt-6 btn-primary py-3 rounded flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play"></i> Сравнить данные
+                </button>
+            </div>
+
+            <!-- Инфо блок -->
+            <div class="card p-4 bg-white/80 backdrop-blur">
+                <h3 class="font-bold text-sm text-green-800 mb-2"><i class="fa-solid fa-shield-halved"></i> Безопасность</h3>
+                <p class="text-xs text-green-700 leading-relaxed">
+                    Обработка файлов происходит полностью в вашем браузере. Данные не отправляются на сервер.
+                </p>
+            </div>
+        </div>
+
+        <!-- Правая панель: Результаты -->
+        <div class="lg:col-span-8">
+            <div class="card h-full flex flex-col min-h-[600px]">
+                <div class="p-5 border-b-2 border-green-200 flex justify-between items-center bg-green-50 rounded-t-[6px]">
+                    <h2 class="text-xl font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-table"></i> 2. Результаты сравнения
+                    </h2>
+                    <div id="stats" class="hidden text-xs font-mono bg-white px-3 py-1 rounded border border-green-200">
+                        Записей: <span id="countRows" class="font-bold">0</span> | 
+                        Сумма разницы: <span id="sumDiff" class="font-bold">0</span> ₽
+                    </div>
+                </div>
+
+                <div class="p-4 flex-grow flex flex-col">
+                    <!-- Таблица -->
+                    <div class="table-container flex-grow bg-white">
+                        <table id="resultTable">
+                            <thead>
+                                <tr>
+                                    <th class="w-16">Код</th>
+                                    <th>Наименование</th>
+                                    <th class="w-24 text-right">Было</th>
+                                    <th class="w-24 text-right">Стало</th>
+                                    <th class="w-24 text-right">Разница</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody" class="text-gray-700">
+                                <tr>
+                                    <td colspan="5" class="text-center py-10 text-gray-400">
+                                        <i class="fa-solid fa-arrow-left text-2xl mb-2 block"></i>
+                                        Загрузите файлы слева для начала работы
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let dataBefore = null;
+        let dataAfter = null;
+
+        // Обработка выбора файла
+        function handleFileSelect(input, type) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const labelId = type === 'before' ? 'nameBefore' : 'nameAfter';
+            document.getElementById(labelId).textContent = file.name;
+            document.getElementById(labelId).classList.add('font-bold', 'text-green-800');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                
+                // Пытаемся найти листы "СМР уник" или "ТМЦ уник", иначе первый лист
+                let sheetName = workbook.SheetNames.find(n => n.includes("СМР") || n.includes("ТМЦ")) || workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+                // Парсим данные в объект Map для быстрого поиска
+                const parsedData = parseExcelData(json);
+                
+                if (type === 'before') dataBefore = parsedData;
+                else dataAfter = parsedData;
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Парсинг сырых данных Excel
+        function parseExcelData(rows) {
+            const map = new Map();
+            // Пропускаем заголовки (обычно первые 1-2 строки), ищем строки с данными
+            // Предполагаем структуру: Код | Наименование | ... | Сумма
+            
+            rows.forEach((row, index) => {
+                if (index < 2) return; // Пропуск шапки
+                
+                // Ищем ячейку с кодом (цифры или формат ИД.КЕР)
+                const codeCell = row.find(cell => typeof cell === 'string' && (cell.match(/^\d+$/) || cell.includes('.')));
+                if (!codeCell) return;
+
+                // Ищем сумму (последнее число в строке обычно сумма)
+                const numbers = row.filter(cell => typeof cell === 'number');
+                const sum = numbers.length > 0 ? numbers[numbers.length - 1] : 0;
+
+                // Наименование - самая длинная строка или то, что рядом с кодом
+                const nameCell = row.find(cell => typeof cell === 'string' && cell !== codeCell && cell.length > 5) || "Без названия";
+
+                map.set(String(codeCell).trim(), {
+                    code: codeCell,
+                    name: nameCell,
+                    sum: sum
+                });
+            });
+            return map;
+        }
+
+        // Основная логика сравнения
+        function processFiles() {
+            if (!dataBefore || !dataAfter) {
+                alert("Пожалуйста, загрузите оба файла!");
+                return;
+            }
+
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            const allCodes = new Set([...dataBefore.keys(), ...dataAfter.keys()]);
+            let totalDiff = 0;
+            let rowCount = 0;
+
+            // Сортировка кодов
+            const sortedCodes = Array.from(allCodes).sort();
+
+            sortedCodes.forEach(code => {
+                const itemBefore = dataBefore.get(code);
+                const itemAfter = dataAfter.get(code);
+
+                const sumBefore = itemBefore ? itemBefore.sum : 0;
+                const sumAfter = itemAfter ? itemAfter.sum : 0;
+                const diff = sumAfter - sumBefore;
+                const name = (itemAfter ? itemAfter.name : itemBefore.name);
+
+                if (diff !== 0 || (itemBefore && itemAfter)) { // Показываем только изменения или полные совпадения (можно настроить)
+                    // Для отчета часто нужны все позиции, даже с 0 разницей, если они есть в обоих
+                    // Но чтобы не спамить, покажем всё, где есть хоть одна запись
+                    
+                    const tr = document.createElement('tr');
+                    
+                    // Форматирование разницы
+                    let diffClass = 'diff-zero';
+                    let diffSign = '';
+                    if (diff > 0) { diffClass = 'diff-positive'; diffSign = '+'; }
+                    if (diff < 0) { diffClass = 'diff-negative'; diffSign = ''; }
+
+                    tr.innerHTML = `
+                        <td class="font-mono text-xs">${code}</td>
+                        <td class="truncate max-w-xs" title="${name}">${name}</td>
+                        <td class="text-right font-mono">${sumBefore.toLocaleString('ru-RU')}</td>
+                        <td class="text-right font-mono">${sumAfter.toLocaleString('ru-RU')}</td>
+                        <td class="text-right font-mono ${diffClass}">${diffSign}${diff.toLocaleString('ru-RU')}</td>
+                    `;
+                    
+                    tbody.appendChild(tr);
+                    totalDiff += diff;
+                    rowCount++;
+                }
+            });
+
+            // Обновление статистики
+            document.getElementById('stats').classList.remove('hidden');
+            document.getElementById('countRows').textContent = rowCount;
+            
+            const sumEl = document.getElementById('sumDiff');
+            sumEl.textContent = totalDiff.toLocaleString('ru-RU');
+            sumEl.className = totalDiff >= 0 ? 'font-bold text-green-600' : 'font-bold text-red-600';
+        }
+    </script>
+</body>
+</html>
