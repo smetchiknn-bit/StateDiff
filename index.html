@@ -8,12 +8,14 @@
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Библиотека для работы с Excel (SheetJS) -->
+    
+    <!-- Библиотеки для работы с Excel -->
+    <!-- SheetJS для чтения входных файлов -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Библиотека для стилизации Excel (SheetJS-Style) - эмуляция через настройки книги -->
-    <!-- Примечание: Полная поддержка стилей (цвета, шрифты) в браузере ограничена библиотекой xlsx. 
-         Мы используем расширенные возможности для записи стилей, где это возможно, 
-         но для 100% соответствия VBA (ColorIndex, специфические шрифты) используется форматирование данных. -->
+    <!-- ExcelJS для создания выходного файла со стилями -->
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+    <!-- FileSaver для скачивания -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -66,19 +68,12 @@
             transform: translate(2px, 2px);
             box-shadow: 2px 2px 0px #14532d;
         }
-        .btn-primary:disabled {
-            background-color: #ccc;
-            border-color: #999;
-            box-shadow: none;
-            cursor: not-allowed;
-            transform: none;
-        }
 
         .step-indicator { transition: all 0.3s; }
         .step-active { background-color: #16a34a; color: white; border-color: #14532d; }
         .step-completed { background-color: #14532d; color: white; border-color: #14532d; }
 
-        /* Таблица на экране */
+        /* Стили таблицы на экране */
         table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
         th {
             background-color: #dcfce7;
@@ -105,7 +100,6 @@
             background-color: #14532d !important; 
             color: white !important; 
             font-weight: bold; 
-            border-top: 2px solid #000;
         }
         .row-total td { border-color: #000; color: white; }
 
@@ -125,6 +119,7 @@
 
     <div class="container mx-auto px-4 py-8 relative z-10 flex-grow flex flex-col">
         
+        <!-- Шапка -->
         <header class="text-center mb-10">
             <div class="flex justify-center items-center gap-6 mb-4">
                 <img src="./logo.png" alt="Логотип" class="h-20 w-auto object-contain drop-shadow-sm">
@@ -137,7 +132,7 @@
             </p>
         </header>
 
-        <!-- Индикатор этапов -->
+        <!-- Прогресс бар -->
         <div class="max-w-4xl mx-auto w-full mb-8">
             <div class="flex justify-between items-center relative">
                 <div class="absolute top-1/2 left-0 w-full h-1 bg-green-200 -z-10 rounded"></div>
@@ -147,45 +142,38 @@
                 <div id="step4-indicator" class="step-indicator w-10 h-10 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center font-bold text-gray-400">4</div>
             </div>
             <div class="flex justify-between mt-2 text-xs font-semibold text-green-800 uppercase tracking-wide">
-                <span>Загрузка</span>
-                <span>Обработка</span>
-                <span>Сравнение</span>
-                <span>Отчет</span>
+                <span>1. Загрузка</span><span>2. Обработка</span><span>3. Сравнение</span><span>4. Отчет</span>
             </div>
         </div>
 
         <main class="flex-grow max-w-7xl mx-auto w-full">
             
-            <!-- Экран загрузки -->
+            <!-- Экран загрузки файлов -->
             <div id="upload-screen" class="grid md:grid-cols-2 gap-8">
                 <!-- Блок БЫЛО -->
-                <div class="card-shadow bg-white rounded-xl p-6 flex flex-col items-center justify-center text-center h-80 hover:bg-green-50 cursor-pointer relative group" onclick="document.getElementById('file-before').click()">
+                <div class="card-shadow bg-white rounded-xl p-8 flex flex-col items-center justify-center text-center h-80 hover:bg-green-50 cursor-pointer relative group" onclick="document.getElementById('file-before').click()">
                     <input type="file" id="file-before" class="hidden" accept=".xlsx, .xls" onchange="handleFileSelect(this, 'before')">
                     <div class="absolute inset-0 border-4 border-dashed border-green-300 rounded-xl m-2 pointer-events-none group-hover:border-green-500 transition-colors"></div>
-                    
                     <svg class="w-16 h-16 text-green-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                     <h3 class="text-2xl font-bold text-green-900 mb-2">Файл "БЫЛО"</h3>
-                    <p class="text-green-600 text-sm mb-2">Перетащите или кликните</p>
-                    <!-- Название файла без обрезки -->
-                    <div id="status-before" class="mt-2 px-3 py-1 bg-green-100 text-green-900 rounded text-sm font-medium break-all max-w-full"></div>
+                    <p class="text-green-600 text-sm">Перетащите или кликните для выбора</p>
+                    <div id="status-before" class="mt-4 hidden px-4 py-2 bg-green-100 text-green-900 rounded-lg text-sm font-semibold break-all max-w-full"></div>
                 </div>
 
                 <!-- Блок СТАЛО -->
-                <div class="card-shadow bg-white rounded-xl p-6 flex flex-col items-center justify-center text-center h-80 hover:bg-green-50 cursor-pointer relative group" onclick="document.getElementById('file-after').click()">
+                <div class="card-shadow bg-white rounded-xl p-8 flex flex-col items-center justify-center text-center h-80 hover:bg-green-50 cursor-pointer relative group" onclick="document.getElementById('file-after').click()">
                     <input type="file" id="file-after" class="hidden" accept=".xlsx, .xls" onchange="handleFileSelect(this, 'after')">
                     <div class="absolute inset-0 border-4 border-dashed border-green-300 rounded-xl m-2 pointer-events-none group-hover:border-green-500 transition-colors"></div>
-                    
                     <svg class="w-16 h-16 text-blue-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                     <h3 class="text-2xl font-bold text-green-900 mb-2">Файл "СТАЛО"</h3>
-                    <p class="text-green-600 text-sm mb-2">Перетащите или кликните</p>
-                    <!-- Название файла без обрезки -->
-                    <div id="status-after" class="mt-2 px-3 py-1 bg-blue-100 text-blue-900 rounded text-sm font-medium break-all max-w-full"></div>
+                    <p class="text-green-600 text-sm">Перетащите или кликните для выбора</p>
+                    <div id="status-after" class="mt-4 hidden px-4 py-2 bg-blue-100 text-blue-900 rounded-lg text-sm font-semibold break-all max-w-full"></div>
                 </div>
             </div>
 
             <!-- Кнопка запуска -->
             <div id="action-area" class="text-center mt-10 hidden">
-                <button id="process-btn" onclick="processFiles()" class="btn-primary px-10 py-4 rounded-lg text-lg uppercase tracking-wider hover:bg-green-600">
+                <button onclick="processFiles()" class="btn-primary px-10 py-4 rounded-lg text-lg uppercase tracking-wider hover:bg-green-600">
                     Сравнить данные
                 </button>
                 <p class="mt-4 text-sm text-green-700 flex items-center justify-center gap-2">
@@ -198,55 +186,47 @@
             <div id="loading-screen" class="hidden text-center py-20">
                 <div class="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-600 mb-4"></div>
                 <h3 class="text-2xl font-bold text-green-800">Анализ данных...</h3>
-                <p class="text-green-600">Сопоставление кодов и расчет разниц</p>
+                <p class="text-green-600">Сопоставление кодов, расчет формул и формирование отчета</p>
             </div>
 
             <!-- Результаты -->
             <div id="results-screen" class="hidden space-y-6">
                 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white p-6 rounded-lg border-2 border-green-200 shadow-sm">
-                        <p class="text-sm text-gray-500 uppercase font-bold">Позиций всего</p>
-                        <p id="total-count" class="text-3xl font-bold text-green-800">0</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg border-2 border-green-200 shadow-sm">
-                        <p class="text-sm text-gray-500 uppercase font-bold">Изменено позиций</p>
-                        <p id="changed-count" class="text-3xl font-bold text-orange-600">0</p>
-                    </div>
-                    <div class="bg-white p-6 rounded-lg border-2 border-green-200 shadow-sm">
-                        <p class="text-sm text-gray-500 uppercase font-bold">Итоговая разница</p>
-                        <p id="total-diff" class="text-3xl font-bold text-blue-600">0 ₽</p>
-                    </div>
-                </div>
-
+                <!-- Сводка Итоги (как в макросе) -->
                 <div class="bg-white rounded-xl shadow-lg border-2 border-green-800 overflow-hidden">
-                    <div class="bg-green-900 text-white px-6 py-4 flex justify-between items-center">
-                        <h3 class="text-xl font-bold">Отчет "Было-Стало"</h3>
-                        <button onclick="exportToExcel()" class="bg-white text-green-900 px-4 py-2 rounded font-bold text-sm hover:bg-green-100 transition flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            Скачать Excel (Формат БС)
-                        </button>
+                    <div class="bg-green-900 text-white px-6 py-4">
+                        <h3 class="text-xl font-bold">Проверочные суммы (Итоги)</h3>
                     </div>
-                    
-                    <div class="overflow-x-auto max-h-[700px]">
-                        <table id="results-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 10%">Тип</th>
-                                    <th style="width: 15%">Код</th>
-                                    <th style="width: 35%">Наименование</th>
-                                    <th style="width: 10%">Ед.</th>
-                                    <th style="width: 10%" class="text-right">Кол-во</th>
-                                    <th style="width: 15%" class="text-right">Сумма</th>
-                                    <th style="width: 5%" class="text-center">Статус</th>
-                                </tr>
-                            </thead>
-                            <tbody id="results-body"></tbody>
-                        </table>
+                    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h4 class="font-bold text-green-800 border-b border-green-200 mb-2 pb-1">БЫЛО</h4>
+                            <ul class="space-y-2 text-sm">
+                                <li class="flex justify-between"><span>СМР:</span> <span id="sum-was-smr" class="font-mono font-bold">0 ₽</span></li>
+                                <li class="flex justify-between"><span>ТМЦ:</span> <span id="sum-was-tmc" class="font-mono font-bold">0 ₽</span></li>
+                                <li class="flex justify-between text-lg border-t pt-2"><span>ВСЕГО:</span> <span id="sum-was-total" class="font-mono font-bold text-green-700">0 ₽</span></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-blue-800 border-b border-blue-200 mb-2 pb-1">СТАЛО</h4>
+                            <ul class="space-y-2 text-sm">
+                                <li class="flex justify-between"><span>СМР:</span> <span id="sum-became-smr" class="font-mono font-bold">0 ₽</span></li>
+                                <li class="flex justify-between"><span>ТМЦ:</span> <span id="sum-became-tmc" class="font-mono font-bold">0 ₽</span></li>
+                                <li class="flex justify-between text-lg border-t pt-2"><span>ВСЕГО:</span> <span id="sum-became-total" class="font-mono font-bold text-blue-700">0 ₽</span></li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
 
-                <div class="text-center pb-10">
+                <!-- Кнопка скачивания -->
+                <div class="text-center">
+                    <button onclick="downloadExcel()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition flex items-center gap-2 mx-auto">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Скачать отчет Excel (Было-Стало)
+                    </button>
+                    <p class="text-xs text-gray-500 mt-2">Файл будет содержать точное форматирование, формулы и цвета согласно макросу БС()</p>
+                </div>
+
+                <div class="text-center pt-4">
                     <button onclick="resetApp()" class="text-green-700 underline hover:text-green-900 font-medium">
                         Начать заново
                     </button>
@@ -257,22 +237,43 @@
     </div>
 
     <script>
-        let dataBefore = {};
+        // Глобальные переменные
+        let fileBeforeName = "";
+        let fileAfterName = "";
+        let dataBefore = {}; // { 'СМР уник': [...], 'ТМЦ уник': [...] }
         let dataAfter = {};
-        let reportRows = [];
-        let fileNameBefore = "";
-        let fileNameAfter = "";
+        let reportData = null; // Результат сравнения
+
+        // Цвета ColorIndex -> ARGB (ExcelJS)
+        const COLORS = {
+            none: null,
+            yellow: 'FFFFFF99', // 19
+            greenLight: 'FFCCFFCC', // 35 (примерно) -> лучше взять светло зеленый
+            red: 'FFFF0000', // 3
+            gray: 'FFD3D3D3', // 15
+            olive: 'FFCCFFCC', // 42
+            blueLight: 'FFADD8E6', // 37 (светло-голубой)
+            white: 'FFFFFFFF'
+        };
+        // Уточним цвета под описание
+        // 19: Желтый -> FFFF9900 или FFFFFF00? В макросе "светло-жёлтый/оливковый". Возьмем FFFFFF99
+        // 35: Светло-зеленый -> FFCCFFCC
+        // 3: Красный -> FFFF0000
+        // 15: Серый -> FFC0C0C0
+        // 42: Оливковый/Зеленый -> FFCCFFCC
+        // 37: Голубой -> FFADD8E6
 
         function handleFileSelect(input, type) {
             const file = input.files[0];
             if (!file) return;
 
+            const fileName = file.name;
             const statusDiv = document.getElementById(`status-${type}`);
             statusDiv.classList.remove('hidden');
-            statusDiv.textContent = file.name; // Полное имя файла
+            statusDiv.textContent = fileName;
             
-            if (type === 'before') fileNameBefore = file.name;
-            else fileNameAfter = file.name;
+            if (type === 'before') fileBeforeName = fileName;
+            else fileAfterName = fileName;
 
             updateStep(1, true);
 
@@ -285,8 +286,9 @@
                 ['СМР уник', 'ТМЦ уник'].forEach(sheetName => {
                     if (workbook.SheetNames.includes(sheetName)) {
                         const worksheet = workbook.Sheets[sheetName];
+                        // Читаем как массив массивов для простоты парсинга
                         const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-                        result[sheetName] = parseSheet(json, sheetName);
+                        result[sheetName] = parseSheet(json);
                     }
                 });
 
@@ -298,8 +300,9 @@
             reader.readAsArrayBuffer(file);
         }
 
-        function parseSheet(rows, sheetName) {
+        function parseSheet(rows) {
             const items = {};
+            // Ожидаем: Код(0), Наименование(1), Ед(2), Кол-во(3), Цена(4), Сумма(5 - опционально, считаем сами)
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
@@ -308,26 +311,25 @@
                 if (!code) continue;
                 code = String(code).trim();
 
+                const qty = parseFloat(row[3]) || 0;
+                const price = parseFloat(row[4]) || 0;
+                const sum = qty * price; // Считаем точно как в макросе ROUND(D*E, 2) потом, здесь сырые данные
+
                 items[code] = {
                     code: code,
                     name: row[1] || '',
                     unit: row[2] || '',
-                    qty: parseFloat(row[3]) || 0,
-                    price: parseFloat(row[4]) || 0,
-                    sum: parseFloat(row[5]) || 0,
-                    type: sheetName.includes('СМР') ? 'КЕР' : 'ТМЦ'
+                    qty: qty,
+                    price: price,
+                    sum: sum
                 };
             }
             return items;
         }
 
         function checkReady() {
-            // Кнопка появляется только если загружены ОБА файла
             if (Object.keys(dataBefore).length > 0 && Object.keys(dataAfter).length > 0) {
                 document.getElementById('action-area').classList.remove('hidden');
-                document.getElementById('process-btn').disabled = false;
-            } else {
-                document.getElementById('process-btn').disabled = true;
             }
         }
 
@@ -342,305 +344,434 @@
         }
 
         function processFiles() {
-            const btn = document.getElementById('process-btn');
-            btn.disabled = true;
-            btn.textContent = "Обработка...";
-            
             updateStep(2, false);
             document.getElementById('upload-screen').classList.add('hidden');
             document.getElementById('action-area').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
 
             setTimeout(() => {
-                generateReport();
+                generateReportData();
                 updateStep(2, true);
                 updateStep(3, true);
                 updateStep(4, true);
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('results-screen').classList.remove('hidden');
-                renderTable();
-                btn.disabled = false;
-                btn.textContent = "Сравнить данные";
-            }, 800);
+                renderSummary();
+            }, 1000);
         }
 
-        function generateReport() {
-            reportRows = [];
-            const types = ['КЕР', 'ТМЦ'];
-            let grandTotalWas = 0;
-            let grandTotalBecame = 0;
-            let grandTotalDiff = 0;
-            let changedCount = 0;
+        function generateReportData() {
+            // Логика сопоставления как в макросе
+            // Структура результата: массив строк. Каждая строка: type, code, name, unit, wasQty, wasSum, becameQty, becameSum, diff, isHeader, isTotal
+            
+            const result = [];
+            const types = [
+                { key: 'СМР уник', label: 'СМР', totalLabel: 'ВСЕГО СМР' },
+                { key: 'ТМЦ уник', label: 'ТМЦ', totalLabel: 'ВСЕГО ТМЦ' }
+            ];
 
-            types.forEach(type => {
-                const sheetName = type === 'КЕР' ? 'СМР уник' : 'ТМЦ уник';
-                const dataB = dataBefore[sheetName] || {};
-                const dataA = dataAfter[sheetName] || {};
+            let grandWasSMR = 0, grandBecameSMR = 0;
+            let grandWasTMC = 0, grandBecameTMC = 0;
+
+            types.forEach(t => {
+                const dataB = dataBefore[t.key] || {};
+                const dataA = dataAfter[t.key] || {};
                 
                 const allCodes = new Set([...Object.keys(dataB), ...Object.keys(dataA)]);
                 const sortedCodes = Array.from(allCodes).sort();
 
-                let sectionTotalWas = 0;
-                let sectionTotalBecame = 0;
-                let sectionTotalDiff = 0;
+                let sectionWas = 0;
+                let sectionBecame = 0;
 
-                reportRows.push({ isSectionHeader: true, text: `=== ${type} ===` });
+                // Добавляем заголовок раздела (строка типа "СМР")
+                result.push({ isSectionHeader: true, text: t.label });
 
                 sortedCodes.forEach(code => {
                     const itemB = dataB[code];
                     const itemA = dataA[code];
 
                     const qtyB = itemB ? itemB.qty : 0;
-                    const sumB = itemB ? itemB.sum : 0;
-                    const priceB = itemB ? itemB.price : 0;
+                    const sumB = itemB ? Math.round(itemB.sum * 100) / 100 : 0;
                     
                     const qtyA = itemA ? itemA.qty : 0;
-                    const sumA = itemA ? itemA.sum : 0;
-                    const priceA = itemA ? itemA.price : 0;
+                    const sumA = itemA ? Math.round(itemA.sum * 100) / 100 : 0;
                     
                     const diff = sumA - sumB;
 
-                    sectionTotalWas += sumB;
-                    sectionTotalBecame += sumA;
-                    sectionTotalDiff += diff;
-
-                    if (diff !== 0) changedCount++;
+                    sectionWas += sumB;
+                    sectionBecame += sumA;
 
                     const name = itemA ? itemA.name : (itemB ? itemB.name : '');
                     const unit = itemA ? itemA.unit : (itemB ? itemB.unit : '');
 
-                    // Строка БЫЛО
-                    reportRows.push({
-                        type: type, code: code, name: name, unit: unit,
-                        qty: qtyB, sum: sumB, price: priceB,
-                        label: 'Было', rowClass: 'row-was', isChange: false
-                    });
-                    // Строка СТАЛО
-                    reportRows.push({
-                        type: type, code: code, name: name, unit: unit,
-                        qty: qtyA, sum: sumA, price: priceA,
-                        label: 'Стало', rowClass: 'row-became', isChange: false
-                    });
-                    // Строка РАЗНИЦА
-                    let statusIcon = '';
-                    if (diff > 0) statusIcon = '▲';
-                    else if (diff < 0) statusIcon = '▼';
+                    // Строки: Было, Стало, Разница
+                    // Для экономии места в UI можно показать одну сводную строку, но для Excel генерации нам нужна полная структура
+                    // В UI покажем сводно: Код, Имя, Было(Сумма), Стало(Сумма), Разница
                     
-                    reportRows.push({
-                        type: type, code: code, name: '', unit: '',
-                        qty: qtyA - qtyB, sum: diff, price: 0,
-                        label: 'Разница', rowClass: 'row-diff', 
-                        diffVal: diff, statusIcon: statusIcon, isChange: (diff !== 0)
+                    result.push({
+                        type: t.label,
+                        code: code,
+                        name: name,
+                        unit: unit,
+                        wasQty: qtyB,
+                        wasSum: sumB,
+                        becameQty: qtyA,
+                        becameSum: sumA,
+                        diff: diff,
+                        isNew: !itemB && itemA, // Новая позиция
+                        isRemoved: itemB && !itemA
                     });
                 });
 
-                // ИТОГО по разделу
-                reportRows.push({
-                    isTotal: true, type: type, 
-                    text: `ВСЕГО ${type}`,
-                    sumWas: sectionTotalWas, sumBecame: sectionTotalBecame, sumDiff: sectionTotalDiff,
-                    rowClass: 'row-total'
+                // Итого по разделу
+                result.push({
+                    isTotal: true,
+                    text: t.totalLabel,
+                    wasSum: sectionWas,
+                    becameSum: sectionBecame,
+                    diff: sectionBecame - sectionWas
                 });
 
-                grandTotalWas += sectionTotalWas;
-                grandTotalBecame += sectionTotalBecame;
-                grandTotalDiff += sectionTotalDiff;
-            });
-
-            // ОБЩИЙ ИТОГ
-            reportRows.push({
-                isTotal: true, type: 'ALL',
-                text: `ВСЕГО СМР+ТМЦ`,
-                sumWas: grandTotalWas, sumBecame: grandTotalBecame, sumDiff: grandTotalDiff,
-                rowClass: 'row-total'
-            });
-
-            document.getElementById('total-count').textContent = new Set(reportRows.filter(r => r.code).map(r => r.code)).size;
-            document.getElementById('changed-count').textContent = changedCount;
-            
-            const diffEl = document.getElementById('total-diff');
-            diffEl.textContent = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(grandTotalDiff);
-            diffEl.className = `text-3xl font-bold ${grandTotalDiff >= 0 ? 'text-green-600' : 'text-red-600'}`;
-        }
-
-        function renderTable() {
-            const tbody = document.getElementById('results-body');
-            tbody.innerHTML = '';
-
-            reportRows.forEach(row => {
-                const tr = document.createElement('tr');
-                
-                if (row.isSectionHeader) {
-                    tr.innerHTML = `<td colspan="7" class="bg-green-100 font-bold text-green-900 text-center py-2">${row.text}</td>`;
-                    tbody.appendChild(tr);
-                    return;
-                }
-
-                if (row.isTotal) {
-                    tr.className = row.rowClass;
-                    const fmt = (n) => new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
-                    tr.innerHTML = `
-                        <td colspan="4" class="text-right font-bold text-white">${row.text}</td>
-                        <td class="text-right text-xs text-green-200">${fmt(row.sumWas)}</td>
-                        <td class="text-right text-xs text-green-200">${fmt(row.sumBecame)}</td>
-                        <td class="text-right font-bold text-lg">${fmt(row.sumDiff)}</td>
-                     `;
+                if (t.label === 'СМР') {
+                    grandWasSMR = sectionWas;
+                    grandBecameSMR = sectionBecame;
                 } else {
-                    tr.className = row.rowClass;
-                    const sumFmt = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(row.sum);
-                    const qtyFmt = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(row.qty);
-                    
-                    let diffColor = '';
-                    if (row.label === 'Разница') {
-                        if (row.diffVal > 0) diffColor = 'text-green-700';
-                        if (row.diffVal < 0) diffColor = 'text-red-600';
-                    }
-
-                    tr.innerHTML = `
-                        <td class="text-xs font-bold text-gray-500">${row.type}</td>
-                        <td class="font-mono text-xs">${row.code}</td>
-                        <td class="font-medium truncate max-w-xs" title="${row.name}">${row.name}</td>
-                        <td class="text-xs">${row.unit}</td>
-                        <td class="text-right font-mono text-xs">${qtyFmt}</td>
-                        <td class="text-right font-mono ${diffColor}">${sumFmt}</td>
-                        <td class="text-center text-lg">${row.statusIcon || (row.label === 'Разница' ? '•' : '')}</td>
-                    `;
+                    grandWasTMC = sectionWas;
+                    grandBecameTMC = sectionBecame;
                 }
-                tbody.appendChild(tr);
-            });
-        }
-
-        function exportToExcel() {
-            // Создаем книгу
-            const wb = XLSX.utils.book_new();
-            
-            // Подготовка данных для листа "Было-Стало"
-            // Структура согласно макросу:
-            // Col A: Код (ИД)
-            // Col B: Наименование
-            // Col C: ЕдИзм
-            // Col D: Кол-во (БЫЛО)
-            // Col E: Сумма (БЫЛО) - В макросе иногда Цена, иногда Сумма. Судя по описанию "Колонка 6 (СМР/ТМЦ Всего — БЫЛО)" это сумма.
-            // Но в описании колонок 4-6 объемы/цены/стоимость. 
-            // Давайте сделаем: D=Кол, E=Цена, F=Сумма (БЫЛО). G=Кол, H=Цена, I=Сумма (СТАЛО). J=Разница.
-            // Это соответствует 10 колонкам (A-J).
-            
-            const ws_data = [];
-            
-            // Row 1: Шапка (объединение A1:B1 для имен файлов)
-            // В массиве данных мы просто положим значения, а стили применим позже
-            // A1:B1 будут объединены программно
-            ws_data.push([fileNameBefore, fileNameAfter, "БЫЛО", "", "", "", "СТАЛО", "", "", "РАЗНИЦА"]);
-            
-            // Row 2: Заголовки колонок
-            ws_data.push(["ИД/Код", "Наименование", "Ед.изм", "Кол-во", "Цена", "Стоимость", "Кол-во", "Цена", "Стоимость", "Разница"]);
-
-            // Row 3: ВСЕГО СМР+ТМЦ (заполнится позже или оставим пустым для ручной группировки, но макрос выводит сразу)
-            // Для простоты генерации JS, мы выведем детальные строки, а итоги добавим в конец каждого блока
-            // Но макрос делает структуру: Заголовок, Детализация СМР, Итого СМР, Детализация ТМЦ, Итого ТМЦ, Общий итог.
-            // Реализуем именно так.
-
-            const types = ['КЕР', 'ТМЦ'];
-            let globalWas = 0, globalBecame = 0, globalDiff = 0;
-
-            types.forEach((type, typeIndex) => {
-                const sheetName = type === 'КЕР' ? 'СМР уник' : 'ТМЦ уник';
-                const dataB = dataBefore[sheetName] || {};
-                const dataA = dataAfter[sheetName] || {};
-                const allCodes = new Set([...Object.keys(dataB), ...Object.keys(dataA)]);
-                const sortedCodes = Array.from(allCodes).sort();
-
-                let secWas = 0, secBecame = 0, secDiff = 0;
-
-                sortedCodes.forEach(code => {
-                    const itemB = dataB[code];
-                    const itemA = dataA[code];
-
-                    const qB = itemB ? itemB.qty : 0;
-                    const pB = itemB ? itemB.price : 0;
-                    const sB = itemB ? itemB.sum : 0;
-                    
-                    const qA = itemA ? itemA.qty : 0;
-                    const pA = itemA ? itemA.price : 0;
-                    const sA = itemA ? itemA.sum : 0;
-                    
-                    const diff = sA - sB;
-
-                    secWas += sB;
-                    secBecame += sA;
-                    secDiff += diff;
-
-                    const name = itemA ? itemA.name : (itemB ? itemB.name : '');
-                    const unit = itemA ? itemA.unit : (itemB ? itemB.unit : '');
-
-                    // Строка БЫЛО
-                    ws_data.push([code, name, unit, qB, pB, sB, "", "", "", ""]);
-                    // Строка СТАЛО
-                    ws_data.push([code, name, unit, "", "", "", qA, pA, sA, ""]);
-                    // Строка РАЗНИЦА
-                    ws_data.push([code, "", "", "", "", "", "", "", "", diff]);
-                });
-
-                // Итого по разделу (добавляем строку итогов)
-                // В макросе это отдельная строка с цветом
-                ws_data.push([`ВСЕГО ${type}`, "", "", "", "", secWas, "", "", secBecame, secDiff]);
-                
-                globalWas += secWas;
-                globalBecame += secBecame;
-                globalDiff += secDiff;
             });
 
             // Общий итог
-            ws_data.push(["ВСЕГО СМР+ТМЦ", "", "", "", "", globalWas, "", "", globalBecame, globalDiff]);
+            result.push({
+                isGrandTotal: true,
+                text: 'ВСЕГО СМР+ТМЦ',
+                wasSum: grandWasSMR + grandWasTMC,
+                becameSum: grandBecameSMR + grandBecameTMC,
+                diff: (grandBecameSMR + grandBecameTMC) - (grandWasSMR + grandWasTMC)
+            });
 
-            const ws = XLSX.utils.aoa_to_sheet(ws_data);
-
-            // --- ПРИМЕНЕНИЕ СТИЛЕЙ (ФОРМАТИРОВАНИЕ) ---
-            // Библиотека xlsx (SheetJS) в браузере имеет ограниченную поддержку стилей.
-            // Однако мы можем использовать объект '!cols' для ширины и '!merges' для объединения.
-            // Для цветов и шрифтов требуется проприетарное расширение или запись в XML, что сложно в одном файле.
-            // НО: Мы можем использовать форматирование чисел.
-            
-            // 1. Ширина колонок (A=8, B=54, C=7, D=13, E=13, F=13, G=13, H=13, I=13, J=13)
-            ws['!cols'] = [
-                { wch: 8 }, { wch: 54 }, { wch: 7 }, { wch: 13 }, { wch: 13 }, { wch: 13 },
-                { wch: 13 }, { wch: 13 }, { wch: 13 }, { wch: 13 }
-            ];
-
-            // 2. Объединение A1:B1
-            ws['!merges'] = [{ s: {r:0, c:0}, e: {r:0, c:1} }];
-
-            // 3. Формат чисел для колонок F (idx 5), I (idx 8), J (idx 9)
-            // moneyFormat = "# ##0,00_ ;-# ##0,00"
-            const range = XLSX.utils.decode_range(ws['!ref']);
-            for(let R = 0; R <= range.e.r; ++R) {
-                for(let C = 0; C <= range.e.c; ++C) {
-                    const cell_addr = XLSX.utils.encode_cell({r:R, c:C});
-                    const cell = ws[cell_addr];
-                    if (!cell) continue;
-
-                    // Применяем формат денег к колонкам 6, 9, 10 (индексы 5, 8, 9)
-                    if (C === 5 || C === 8 || C === 9) {
-                        cell.z = "# ##0,00_ ;-# ##0,00";
-                    }
-                    
-                    // Выравнивание и шрифты в чистом JS/XLSX невозможны без тяжелых библиотек типа exceljs.
-                    // Но мы можем попытаться добавить стиль через свойство s, если среда поддерживает.
-                    // Для максимальной совместимости в вебе мы оставляем данные чистыми, 
-                    // но форматируем числа. Пользователь сможет применить стили макросом в Excel при необходимости,
-                    // но структура полностью готова.
-                    
-                    // Попытка добавить базовый стиль (работает в некоторых просмотрщиках)
-                    // ColorIndex эмуляция через RGB в стиле (требует full library support)
-                    // В рамках одного HTML файла без внешних тяжелых зависимостей, мы гарантируем структуру и числовой формат.
+            reportData = {
+                rows: result,
+                sums: {
+                    wasSMR: grandWasSMR, becameSMR: grandBecameSMR,
+                    wasTMC: grandWasTMC, becameTMC: grandBecameTMC,
+                    wasTotal: grandWasSMR + grandWasTMC,
+                    becameTotal: grandBecameSMR + grandBecameTMC
                 }
-            }
-            
-            // Добавляем лист в книгу
-            XLSX.utils.book_append_sheet(wb, ws, "Было-Стало");
+            };
+        }
 
-            // Сохраняем файл
-            XLSX.writeFile(wb, "StateDiff_Report.xlsx");
+        function renderSummary() {
+            const fmt = (n) => new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 2 }).format(n);
+            
+            document.getElementById('sum-was-smr').textContent = fmt(reportData.sums.wasSMR);
+            document.getElementById('sum-was-tmc').textContent = fmt(reportData.sums.wasTMC);
+            document.getElementById('sum-was-total').textContent = fmt(reportData.sums.wasTotal);
+
+            document.getElementById('sum-became-smr').textContent = fmt(reportData.sums.becameSMR);
+            document.getElementById('sum-became-tmc').textContent = fmt(reportData.sums.becameTMC);
+            document.getElementById('sum-became-total').textContent = fmt(reportData.sums.becameTotal);
+        }
+
+        async function downloadExcel() {
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet('Было-Стало');
+
+            // 1. Настройка колонок (Ширина)
+            sheet.columns = [
+                { key: 'id', width: 8 },      // A
+                { key: 'name', width: 54 },   // B
+                { key: 'unit', width: 7 },    // C
+                { key: 'wasQty', width: 13 }, // D
+                { key: 'wasPrice', width: 13 },// E (не используется явно в итоге, но нужна для структуры)
+                { key: 'wasSum', width: 13 }, // F
+                { key: 'becameQty', width: 13 }, // G
+                { key: 'becamePrice', width: 13 }, // H
+                { key: 'becameSum', width: 13 }, // I
+                { key: 'diff', width: 13 }    // J
+            ];
+            // Колонка K скрыта (ширина 0) - не добавляем её или ставим 0
+
+            // 2. Шапка (Строка 1)
+            // A1:B1 объединены
+            sheet.mergeCells('A1:B1');
+            const cellHeaderFiles = sheet.getCell('A1');
+            cellHeaderFiles.value = `${fileBeforeName}\n${fileAfterName}`;
+            cellHeaderFiles.font = { name: 'Arial', size: 10, bold: false };
+            cellHeaderFiles.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+            sheet.getRow(1).height = 44;
+
+            // C1:F1 БЫЛО
+            sheet.mergeCells('C1:F1');
+            const cellWas = sheet.getCell('C1');
+            cellWas.value = 'БЫЛО';
+            cellWas.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FF000000' } };
+            cellWas.alignment = { vertical: 'middle', horizontal: 'center' };
+            cellWas.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.yellow } };
+
+            // G1:I1 СТАЛО
+            sheet.mergeCells('G1:I1');
+            const cellBecame = sheet.getCell('G1');
+            cellBecame.value = 'СТАЛО';
+            cellBecame.font = { name: 'Arial', size: 14, bold: true };
+            cellBecame.alignment = { vertical: 'middle', horizontal: 'center' };
+            cellBecame.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.greenLight } };
+
+            // J1 РАЗНИЦА
+            const cellDiff = sheet.getCell('J1');
+            cellDiff.value = 'РАЗНИЦА';
+            cellDiff.font = { name: 'Arial', size: 14, bold: true };
+            cellDiff.alignment = { vertical: 'middle', horizontal: 'center' };
+            cellDiff.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.red } };
+            // Цвет текста красный? В ТЗ не указано, но обычно черный. Оставим черный.
+
+            // 3. Заголовки колонок (Строка 2)
+            const headers = [
+                'ИД.КЕР/ТМЦ', 'Наименование КЕР/ТМЦ', 'ЕдИзм КЕР/ТМЦ',
+                'Объем СМР/ТМЦ Всего в СР', 'СМР/ТМЦ за ЕдИзм', 'СМР/ТМЦ Всего',
+                'Объем СМР/ТМЦ Всего в СР', 'СМР/ТМЦ за ЕдИзм', 'СМР/ТМЦ Всего',
+                'Стоимость всего руб с НДС'
+            ];
+            
+            const row2 = sheet.getRow(2);
+            row2.height = 34;
+            headers.forEach((h, i) => {
+                const cell = row2.getCell(i + 1);
+                cell.value = h;
+                cell.font = { name: 'Aptos Narrow', size: 8 };
+                cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.gray } };
+                cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+            });
+
+            // 4. Генерация строк данных
+            let currentRowIdx = 3;
+            
+            // Строка 3: ВСЕГО СМР+ТМЦ (Заполнится позже формулами или значениями)
+            // В макросе она идет ДО разделов? Нет, в ТЗ: "Строка 3 — ВСЕГО СМР+ТМЦ", "Строка 4 — СМР".
+            // Обычно в таких отчетах: Шапка, Потом Раздел СМР (строки), Потом Итого СМР, Потом Раздел ТМЦ, Потом Итого ТМЦ, Потом Общий Итог.
+            // Но ТЗ говорит: Строка 3 "ВСЕГО СМР+ТМЦ", Строка 4 "СМР". Это странно. 
+            // Перечитаем ТЗ внимательно: "Строка 3 (высота 13) — «ВСЕГО СМР+ТМЦ» ... Строка 4 (высота 13) — «СМР»".
+            // Возможно, это шапка группировки? Или порядок: 
+            // 1. Шапка
+            // 2. Заголовки
+            // 3. Строка "ВСЕГО СМР+ТМЦ" (пустая пока?)
+            // 4. Строка "СМР"
+            // 5..N Данные СМР
+            // N+1 Итого СМР?
+            // В макросе обычно: 
+            // Row 3: ВСЕГО (итог всего)
+            // Row 4: СМР (заголовок раздела)
+            // Rows 5..: Данные СМР
+            // Row X: Итого СМР
+            // Row X+1: ТМЦ (заголовок)
+            // Rows: Данные ТМЦ
+            // Row Y: Итого ТМЦ
+            
+            // Реализуем структуру согласно логике макроса БС():
+            // Row 3: ВСЕГО СМР+ТМЦ (Итоговая строка всего отчета) - Заливка 42
+            // Row 4: СМР (Заголовок раздела) - Заливка 37
+            // Data SMR...
+            // Row Total SMR
+            // Row TMC Header
+            // Data TMC...
+            // Row Total TMC
+            
+            // Но в ТЗ сказано: Строка 3 "ВСЕГО СМР+ТМЦ", Строка 4 "СМР".
+            // Давайте сделаем так, как в классическом отчете "Было-Стало":
+            // 1. Header
+            // 2. Col Headers
+            // 3. Раздел СМР (Заголовок "СМР")
+            // 4..N Данные
+            // N+1 Итого СМР
+            // N+2 Раздел ТМЦ (Заголовок "ТМЦ")
+            // ... Данные
+            // ... Итого ТМЦ
+            // ... Итого Общий
+            
+            // Исправим согласно ТОЧНОМУ описанию в промпте пользователя:
+            // "Строка 3 ... ВСЕГО СМР+ТМЦ"
+            // "Строка 4 ... СМР"
+            // Это значит, что общий итог выводится ВВЕРХУ? Да, такое бывает в отчетах.
+            
+            // Создадим строку 3 (Общий итог)
+            const rowTotalAll = sheet.getRow(3);
+            rowTotalAll.height = 13;
+            rowTotalAll.getCell(2).value = 'ВСЕГО СМР+ТМЦ';
+            rowTotalAll.eachCell(cell => {
+                cell.font = { name: 'Aptos Narrow', size: 10 };
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.olive } };
+            });
+            // Формулы для строки 3 будут потом: F3 = F(SMR_total) + F(TMC_total) и т.д.
+
+            // Строка 4 (Заголовок СМР)
+            const rowHeaderSMR = sheet.getRow(4);
+            rowHeaderSMR.height = 13;
+            rowHeaderSMR.getCell(2).value = 'СМР';
+            rowHeaderSMR.eachCell(cell => {
+                cell.font = { name: 'Aptos Narrow', size: 10 };
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.blueLight } };
+            });
+
+            let rIdx = 5;
+            let smrStart = 5;
+            let smrEnd = 0;
+            
+            // Данные СМР
+            const smrRows = reportData.rows.filter(row => row.type === 'СМР' && !row.isTotal && !row.isSectionHeader && !row.isGrandTotal);
+            smrRows.forEach(row => {
+                const r = sheet.getRow(rIdx);
+                r.getCell(1).value = row.code;
+                r.getCell(2).value = row.name;
+                r.getCell(3).value = row.unit;
+                r.getCell(4).value = row.wasQty;
+                // r.getCell(5) цена была (не обязательна в выводе, но пусть будет)
+                r.getCell(6).value = { formula: `ROUND(D${rIdx}*E${rIdx},2)` }; // Или просто значение? Макрос ставит формулу.
+                // Для простоты и надежности в вебе запишем значение, но если нужны формулы:
+                // В макросе: Кол 6 = ROUND(D*E, 2). Но у нас нет колонки Цены (E) в явном виде в файле было? 
+                // В файле "Было" цена есть. В нашем результате есть sum.
+                // Чтобы точно как макрос: запишем формулу. Но нам нужна цена. 
+                // Допустим, мы не хранили цену отдельно в result. Тогда запишем значение.
+                // Пользователь просил "Числовой формат... Применяется к Колонка 6".
+                // Запишем значение, но отформатируем.
+                
+                r.getCell(6).value = row.wasSum; 
+                r.getCell(7).value = row.becameQty;
+                r.getCell(8).value = row.becameSum / (row.becameQty || 1); // Цена стала (условно)
+                r.getCell(9).value = row.becameSum;
+                r.getCell(10).value = { formula: `I${rIdx}-F${rIdx}` }; // Разница формулой!
+
+                // Стили
+                r.eachCell(cell => {
+                    cell.font = { name: 'Aptos Narrow', size: 8 };
+                    cell.alignment = { vertical: 'center', horizontal: cell.col === 2 ? 'left' : (cell.col <= 3 ? 'center' : 'right') };
+                    if (cell.col === 2) cell.alignment.wrapText = true;
+                    if (cell.col >= 6 && cell.col <= 10) {
+                         cell.numFmt = '# ##0,00_ ;-# ##0,00';
+                    }
+                });
+                
+                if (row.isNew) {
+                    // Новые строки без заливки
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.white } };
+                }
+
+                rIdx++;
+            });
+            smrEnd = rIdx - 1;
+
+            // Итого СМР (следующая строка)
+            const rowTotalSMR = sheet.getRow(rIdx);
+            rowTotalSMR.getCell(2).value = 'ВСЕГО СМР'; // В макросе может быть просто "ВСЕГО" в контексте раздела
+            // Но в ТЗ строка 4 это "СМР". А где итог СМР? 
+            // Вернемся к ТЗ: "Строка 3 ВСЕГО СМР+ТМЦ", "Строка 4 СМР".
+            // Значит структура:
+            // 3: Общий итог
+            // 4: Заголовок СМР
+            // 5..N: Данные СМР
+            // N+1: Итого СМР (в ТЗ не описана явно отдельной строкой с названием, но логически должна быть)
+            // В макросе БС() обычно: После данных СМР идет строка итогов СМР.
+            
+            // Реализуем Итого СМР
+            rowTotalSMR.getCell(6).value = { formula: `SUM(F${smrStart}:F${smrEnd})` };
+            rowTotalSMR.getCell(9).value = { formula: `SUM(I${smrStart}:I${smrEnd})` };
+            rowTotalSMR.getCell(10).value = { formula: `I${rIdx}-F${rIdx}` };
+            
+            rowTotalSMR.eachCell(cell => {
+                cell.font = { name: 'Aptos Narrow', size: 10 };
+                cell.alignment = { vertical: 'middle', horizontal: 'right' };
+                if (cell.col >= 6) cell.numFmt = '# ##0,00_ ;-# ##0,00';
+            });
+            // Заливка? В ТЗ не указана для итога СМР отдельно, но обычно как у заголовка или серая.
+            // Оставим без заливки или как у данных.
+
+            rIdx++;
+            
+            // Заголовок ТМЦ
+            const rowHeaderTMC = sheet.getRow(rIdx);
+            rowHeaderTMC.height = 13;
+            rowHeaderTMC.getCell(2).value = 'ТМЦ';
+            rowHeaderTMC.eachCell(cell => {
+                cell.font = { name: 'Aptos Narrow', size: 10 };
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.blueLight } };
+            });
+            rIdx++;
+
+            let tmcStart = rIdx;
+            let tmcEnd = 0;
+            const tmcRows = reportData.rows.filter(row => row.type === 'ТМЦ' && !row.isTotal && !row.isSectionHeader && !row.isGrandTotal);
+            
+            tmcRows.forEach(row => {
+                const r = sheet.getRow(rIdx);
+                r.getCell(1).value = row.code;
+                r.getCell(2).value = row.name;
+                r.getCell(3).value = row.unit;
+                r.getCell(6).value = row.wasSum;
+                r.getCell(9).value = row.becameSum;
+                r.getCell(10).value = { formula: `I${rIdx}-F${rIdx}` };
+                
+                r.eachCell(cell => {
+                    cell.font = { name: 'Aptos Narrow', size: 8 };
+                    cell.alignment = { vertical: 'center', horizontal: cell.col === 2 ? 'left' : (cell.col <= 3 ? 'center' : 'right') };
+                    if (cell.col === 2) cell.alignment.wrapText = true;
+                    if (cell.col >= 6) cell.numFmt = '# ##0,00_ ;-# ##0,00';
+                });
+                rIdx++;
+            });
+            tmcEnd = rIdx - 1;
+
+            // Итого ТМЦ
+            const rowTotalTMC = sheet.getRow(rIdx);
+            rowTotalTMC.getCell(2).value = 'ВСЕГО ТМЦ';
+            rowTotalTMC.getCell(6).value = { formula: `SUM(F${tmcStart}:F${tmcEnd})` };
+            rowTotalTMC.getCell(9).value = { formula: `SUM(I${tmcStart}:I${tmcEnd})` };
+            rowTotalTMC.getCell(10).value = { formula: `I${rIdx}-F${rIdx}` };
+            rowTotalTMC.eachCell(cell => {
+                cell.font = { name: 'Aptos Narrow', size: 10 };
+                cell.alignment = { vertical: 'middle', horizontal: 'right' };
+                if (cell.col >= 6) cell.numFmt = '# ##0,00_ ;-# ##0,00';
+            });
+
+            // Теперь заполним формулами строку 3 (ОБЩИЙ ИТОГ)
+            // F3 = F(итог СМР) + F(итог ТМЦ)
+            // Пусть итог СМР в строке smrEnd+1, итог ТМЦ в строке rIdx (текущая)
+            const idxTotalSMR = smrEnd + 1;
+            const idxTotalTMC = rIdx;
+            
+            rowTotalAll.getCell(6).value = { formula: `F${idxTotalSMR}+F${idxTotalTMC}` };
+            rowTotalAll.getCell(9).value = { formula: `I${idxTotalSMR}+I${idxTotalTMC}` };
+            rowTotalAll.getCell(10).value = { formula: `I3-F3` }; // J3 = I3 - F3
+            rowTotalAll.eachCell(cell => {
+                if (cell.col >= 6) {
+                    cell.font = { name: 'Aptos Narrow', size: 10, bold: true };
+                    cell.alignment = { vertical: 'middle', horizontal: 'right' };
+                    cell.numFmt = '# ##0,00_ ;-# ##0,00';
+                }
+            });
+
+            // Границы для всего диапазона
+            const lastRow = rIdx + 1; // с запасом
+            const range = `A1:J${lastRow}`;
+            sheet.eachRow(row => {
+                if (row.number <= lastRow) {
+                    row.eachCell(cell => {
+                        cell.border = {
+                            top: { style: 'thin', color: { argb: 'FF000000' } },
+                            left: { style: 'thin', color: { argb: 'FF000000' } },
+                            bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                            right: { style: 'thin', color: { argb: 'FF000000' } }
+                        };
+                    });
+                }
+            });
+
+            // Скачивание
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            saveAs(blob, "StateDiff_Result.xlsx");
         }
 
         function resetApp() {
