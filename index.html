@@ -573,7 +573,7 @@
             cellTotalAll.value = 'ВСЕГО СМР+ТМЦ';
             cellInfo(cellTotalAll, { font: { name: 'Aptos Narrow', size: 10 }, align: 'center', bg: C_TOTAL_MAIN, border: true });
             
-            // Расчет итогов для экспорта
+            // Расчет общих сумм
             let gWas = 0, gBec = 0;
             Object.values(dataBefore['СМР уник']||{}).forEach(i=>gWas+=i.sum);
             Object.values(dataBefore['ТМЦ уник']||{}).forEach(i=>gWas+=i.sum);
@@ -646,7 +646,10 @@
                     };
                     if (isNew) style.bg = null;
                     cellInfo(cell, style);
-                    if ([6, 9, 10].includes(i)) cell.numFmt = "# ##0,00_ ;-# ##0,00";
+                    
+                    if ([6, 9, 10].includes(i)) {
+                        cell.numFmt = "# ##0,00_ ;-# ##0,00";
+                    }
                 }
                 currentRow++;
             });
@@ -712,7 +715,7 @@
                 currentRow++;
             });
 
-            // Границы
+            // Границы на весь диапазон
             const lastRow = currentRow - 1;
             worksheet.eachRow(row => {
                 if (row.number <= lastRow) {
@@ -729,6 +732,7 @@
                 }
             });
 
+            // Скачивание
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
             saveAs(blob, "StateDiff_Report.xlsx");
