@@ -1,64 +1,33 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StateDiff - Сравнение смет</title>
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="FSKicon.png">
-    <!-- Tailwind CSS (через CDN для работы без сборки) -->
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="./FSKicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Форма БылоСтало (для СУ)</title>
+    
+    <!-- Подключаем Tailwind CSS через CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS для чтения Excel -->
+    
+    <!-- Подключаем библиотеку для работы с Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Иконки -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- Настройка шрифтов и стилей -->
     <style>
-        /* Фирменный стиль: Миллиметровка и Зеленая гамма */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
         body {
-            background-color: #f0fdf4;
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdf4; /* Светло-зеленый фон */
             background-image: 
-                linear-gradient(#dcfce7 1px, transparent 1px),
-                linear-gradient(90deg, #dcfce7 1px, transparent 1px);
+                linear-gradient(rgba(22, 163, 74, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(22, 163, 74, 0.05) 1px, transparent 1px);
             background-size: 20px 20px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #14532d;
-        }
-
-        .card {
-            background: white;
-            border: 2px solid #166534;
-            box-shadow: 4px 4px 0px #166534;
-            border-radius: 8px;
-            transition: all 0.2s;
-        }
-
-        .btn-primary {
-            background-color: #16a34a;
-            color: white;
-            border: 2px solid #14532d;
-            box-shadow: 2px 2px 0px #14532d;
-            font-weight: bold;
-            transition: all 0.1s;
-        }
-
-        .btn-primary:active {
-            transform: translate(2px, 2px);
-            box-shadow: 0px 0px 0px #14532d;
-        }
-
-        .btn-secondary {
-            background-color: #ffffff;
-            color: #166534;
-            border: 2px solid #166534;
-            box-shadow: 2px 2px 0px #14532d;
-            font-weight: bold;
-            transition: all 0.1s;
-        }
-
-        .btn-secondary:active {
-            transform: translate(2px, 2px);
-            box-shadow: 0px 0px 0px #14532d;
+            color: #14532d; /* Темно-зеленый текст */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
         }
 
         /* Анимация плавающих элементов */
@@ -69,46 +38,85 @@
         }
 
         .floating-icon {
-            animation: float 3s ease-in-out infinite;
             position: absolute;
             opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
             z-index: 0;
-            color: #166534;
-            font-size: 4rem;
+            pointer-events: none;
         }
 
-        .table-container {
-            max-height: 60vh;
-            overflow-y: auto;
+        .card-shadow {
+            box-shadow: 8px 8px 0px rgba(22, 163, 74, 0.2);
             border: 2px solid #166534;
-            border-radius: 4px;
+            transition: all 0.3s ease;
         }
 
+        .card-shadow:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 10px 10px 0px rgba(22, 163, 74, 0.3);
+        }
+
+        .btn-primary {
+            background-color: #16a34a;
+            color: white;
+            font-weight: 600;
+            border: 2px solid #14532d;
+            box-shadow: 4px 4px 0px #14532d;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #14532d;
+        }
+
+        .step-indicator {
+            transition: all 0.3s;
+        }
+        
+        .step-active {
+            background-color: #16a34a;
+            color: white;
+            border-color: #14532d;
+        }
+
+        .step-completed {
+            background-color: #14532d;
+            color: white;
+            border-color: #14532d;
+        }
+
+        /* Стили таблицы */
         table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 0.875rem;
         }
-
+        
         th {
             background-color: #dcfce7;
             color: #14532d;
+            font-weight: 700;
+            text-align: left;
+            padding: 12px;
+            border: 1px solid #166534;
             position: sticky;
             top: 0;
             z-index: 10;
-            border-bottom: 2px solid #166534;
-            padding: 8px;
-            text-align: left;
-            font-size: 0.85rem;
         }
 
         td {
-            border-bottom: 1px solid #bbf7d0;
-            padding: 6px 8px;
-            font-size: 0.85rem;
+            padding: 10px 12px;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f0fdf4;
         }
 
         tr:hover {
-            background-color: #f0fdf4;
+            background-color: #dcfce7;
         }
 
         .diff-positive { color: #16a34a; font-weight: bold; }
@@ -116,237 +124,444 @@
         .diff-zero { color: #6b7280; }
 
         /* Скроллбар */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f0fdf4; }
-        ::-webkit-scrollbar-thumb { background: #16a34a; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #15803d; }
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f0fdf4;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #16a34a;
+            border-radius: 5px;
+            border: 2px solid #f0fdf4;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #15803d;
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center p-4 relative overflow-x-hidden">
+<body class="relative">
 
     <!-- Декоративные элементы -->
-    <i class="fa-solid fa-calculator floating-icon" style="top: 10%; left: 5%;"></i>
-    <i class="fa-solid fa-file-invoice-dollar floating-icon" style="top: 20%; right: 10%; animation-delay: 1s;"></i>
-    <i class="fa-solid fa-chart-line floating-icon" style="bottom: 15%; left: 15%; animation-delay: 2s;"></i>
-
-    <!-- Логотип и Заголовок -->
-    <div class="w-full max-w-6xl mb-6 flex items-center gap-4 z-10">
-        <img src="logo.png" alt="Стикер Лого" class="h-16 w-auto object-contain drop-shadow-md">
-        <div>
-            <h1 class="text-3xl font-bold text-green-900 tracking-tight">StateDiff</h1>
-            <p class="text-green-700 text-sm font-medium">Инструмент сравнения сметных данных</p>
-        </div>
-    </div>
+    <div class="floating-icon" style="top: 10%; left: 5%; font-size: 4rem;">Σ</div>
+    <div class="floating-icon" style="top: 20%; right: 10%; font-size: 3rem;">₽</div>
+    <div class="floating-icon" style="bottom: 15%; left: 15%; font-size: 5rem;">=</div>
+    <div class="floating-icon" style="bottom: 10%; right: 5%; font-size: 3rem;">∑</div>
 
     <!-- Основной контейнер -->
-    <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-6 z-10">
+    <div class="container mx-auto px-4 py-8 relative z-10 flex-grow flex flex-col">
         
-        <!-- Левая панель: Загрузка файлов -->
-        <div class="lg:col-span-4 space-y-4">
-            <div class="card p-5">
-                <h2 class="text-xl font-bold mb-4 border-b-2 border-green-200 pb-2 flex items-center gap-2">
-                    <i class="fa-solid fa-upload"></i> 1. Загрузка файлов
-                </h2>
-                
-                <div class="space-y-4">
-                    <div class="border-2 border-dashed border-green-300 rounded-lg p-4 bg-green-50 hover:bg-green-100 transition cursor-pointer relative">
-                        <input type="file" id="fileBefore" accept=".xlsx, .xls" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleFileSelect(this, 'before')">
-                        <div class="text-center">
-                            <i class="fa-solid fa-file-excel text-3xl text-green-600 mb-2"></i>
-                            <p class="font-bold text-green-800">Файл "БЫЛО"</p>
-                            <p class="text-xs text-green-600 mt-1" id="nameBefore">Перетащите или кликните</p>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-center">
-                        <i class="fa-solid fa-arrow-down text-green-400 animate-bounce"></i>
-                    </div>
-
-                    <div class="border-2 border-dashed border-green-300 rounded-lg p-4 bg-green-50 hover:bg-green-100 transition cursor-pointer relative">
-                        <input type="file" id="fileAfter" accept=".xlsx, .xls" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleFileSelect(this, 'after')">
-                        <div class="text-center">
-                            <i class="fa-solid fa-file-excel text-3xl text-green-600 mb-2"></i>
-                            <p class="font-bold text-green-800">Файл "СТАЛО"</p>
-                            <p class="text-xs text-green-600 mt-1" id="nameAfter">Перетащите или кликните</p>
-                        </div>
-                    </div>
-                </div>
-
-                <button onclick="processFiles()" class="w-full mt-6 btn-primary py-3 rounded flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-play"></i> Сравнить данные
-                </button>
+        <!-- Шапка -->
+        <header class="text-center mb-10">
+            <div class="flex justify-center items-center gap-4 mb-4">
+                <img src="./logo.png" alt="Логотип Стикер" class="h-16 w-auto object-contain drop-shadow-md">
+                <h1 class="text-4xl md:text-5xl font-bold text-green-900 tracking-tight">
+                    Форма БылоСтало (для СУ)
+                </h1>
             </div>
+            <p class="text-xl text-green-700 font-medium bg-white/50 inline-block px-6 py-2 rounded-full border border-green-200 shadow-sm">
+                Мастер сравнения КЕР и ТМЦ
+            </p>
+        </header>
 
-            <!-- Инфо блок -->
-            <div class="card p-4 bg-white/80 backdrop-blur">
-                <h3 class="font-bold text-sm text-green-800 mb-2"><i class="fa-solid fa-shield-halved"></i> Безопасность</h3>
-                <p class="text-xs text-green-700 leading-relaxed">
-                    Обработка файлов происходит полностью в вашем браузере. Данные не отправляются на сервер.
-                </p>
+        <!-- Индикатор прогресса -->
+        <div class="max-w-4xl mx-auto w-full mb-8">
+            <div class="flex justify-between items-center relative">
+                <div class="absolute top-1/2 left-0 w-full h-1 bg-green-200 -z-10 rounded"></div>
+                
+                <!-- Шаг 1 -->
+                <div id="step1-indicator" class="step-indicator w-10 h-10 rounded-full border-2 border-green-600 bg-white flex items-center justify-center font-bold text-green-700 step-active">
+                    1
+                </div>
+                <!-- Шаг 2 -->
+                <div id="step2-indicator" class="step-indicator w-10 h-10 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center font-bold text-gray-400">
+                    2
+                </div>
+                <!-- Шаг 3 -->
+                <div id="step3-indicator" class="step-indicator w-10 h-10 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center font-bold text-gray-400">
+                    3
+                </div>
+                <!-- Шаг 4 -->
+                <div id="step4-indicator" class="step-indicator w-10 h-10 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center font-bold text-gray-400">
+                    4
+                </div>
+            </div>
+            <div class="flex justify-between mt-2 text-xs font-semibold text-green-800 uppercase tracking-wide">
+                <span>Загрузка файлов</span>
+                <span>Обработка</span>
+                <span>Анализ</span>
+                <span>Результат</span>
             </div>
         </div>
 
-        <!-- Правая панель: Результаты -->
-        <div class="lg:col-span-8">
-            <div class="card h-full flex flex-col min-h-[600px]">
-                <div class="p-5 border-b-2 border-green-200 flex justify-between items-center bg-green-50 rounded-t-[6px]">
-                    <h2 class="text-xl font-bold flex items-center gap-2">
-                        <i class="fa-solid fa-table"></i> 2. Результаты сравнения
-                    </h2>
-                    <div id="stats" class="hidden text-xs font-mono bg-white px-3 py-1 rounded border border-green-200">
-                        Записей: <span id="countRows" class="font-bold">0</span> | 
-                        Сумма разницы: <span id="sumDiff" class="font-bold">0</span> ₽
+        <!-- Область контента -->
+        <main class="flex-grow max-w-6xl mx-auto w-full">
+            
+            <!-- Экран загрузки -->
+            <div id="upload-screen" class="grid md:grid-cols-2 gap-8">
+                <!-- Блок БЫЛО -->
+                <div class="card-shadow bg-white rounded-xl p-8 flex flex-col items-center justify-center text-center h-80 hover:bg-green-50 cursor-pointer relative group" onclick="document.getElementById('file-before').click()">
+                    <input type="file" id="file-before" class="hidden" accept=".xlsx, .xls" onchange="handleFileSelect(this, 'before')">
+                    <div class="absolute inset-0 border-4 border-dashed border-green-300 rounded-xl m-2 pointer-events-none group-hover:border-green-500 transition-colors"></div>
+                    
+                    <svg class="w-16 h-16 text-green-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <h3 class="text-2xl font-bold text-green-900 mb-2">Файл "БЫЛО"</h3>
+                    <p class="text-green-600">Перетащите Excel файл сюда или кликните</p>
+                    <p class="text-xs text-gray-400 mt-4">Листы: "СМР уник", "ТМЦ уник"</p>
+                    <div id="status-before" class="mt-4 hidden px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                        Файл загружен ✓
                     </div>
                 </div>
 
-                <div class="p-4 flex-grow flex flex-col">
-                    <!-- Таблица -->
-                    <div class="table-container flex-grow bg-white">
-                        <table id="resultTable">
+                <!-- Блок СТАЛО -->
+                <div class="card-shadow bg-white rounded-xl p-8 flex flex-col items-center justify-center text-center h-80 hover:bg-green-50 cursor-pointer relative group" onclick="document.getElementById('file-after').click()">
+                    <input type="file" id="file-after" class="hidden" accept=".xlsx, .xls" onchange="handleFileSelect(this, 'after')">
+                    <div class="absolute inset-0 border-4 border-dashed border-green-300 rounded-xl m-2 pointer-events-none group-hover:border-green-500 transition-colors"></div>
+                    
+                    <svg class="w-16 h-16 text-blue-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <h3 class="text-2xl font-bold text-green-900 mb-2">Файл "СТАЛО"</h3>
+                    <p class="text-green-600">Перетащите Excel файл сюда или кликните</p>
+                    <p class="text-xs text-gray-400 mt-4">Листы: "СМР уник", "ТМЦ уник"</p>
+                    <div id="status-after" class="mt-4 hidden px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+                        Файл загружен ✓
+                    </div>
+                </div>
+            </div>
+
+            <!-- Кнопка запуска -->
+            <div id="action-area" class="text-center mt-10 hidden">
+                <button onclick="processFiles()" class="btn-primary px-10 py-4 rounded-lg text-lg uppercase tracking-wider hover:bg-green-600">
+                    Сравнить данные
+                </button>
+                <p class="mt-4 text-sm text-green-700 flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    Обработка происходит локально в вашем браузере. Данные никуда не отправляются.
+                </p>
+            </div>
+
+            <!-- Индикатор загрузки -->
+            <div id="loading-screen" class="hidden text-center py-20">
+                <div class="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-600 mb-4"></div>
+                <h3 class="text-2xl font-bold text-green-800">Анализируем данные...</h3>
+                <p class="text-green-600">Сопоставление кодов КЕР и ТМЦ</p>
+            </div>
+
+            <!-- Результаты -->
+            <div id="results-screen" class="hidden space-y-8">
+                
+                <!-- Сводка -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-lg border-2 border-green-200 shadow-sm">
+                        <p class="text-sm text-gray-500 uppercase font-bold">Всего позиций</p>
+                        <p id="total-count" class="text-3xl font-bold text-green-800">0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg border-2 border-green-200 shadow-sm">
+                        <p class="text-sm text-gray-500 uppercase font-bold">Изменено</p>
+                        <p id="changed-count" class="text-3xl font-bold text-orange-600">0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg border-2 border-green-200 shadow-sm">
+                        <p class="text-sm text-gray-500 uppercase font-bold">Разница в сумме</p>
+                        <p id="total-diff" class="text-3xl font-bold text-blue-600">0 ₽</p>
+                    </div>
+                </div>
+
+                <!-- Таблицы -->
+                <div class="bg-white rounded-xl shadow-lg border-2 border-green-800 overflow-hidden">
+                    <div class="bg-green-900 text-white px-6 py-4 flex justify-between items-center">
+                        <h3 class="text-xl font-bold">Детальный отчет</h3>
+                        <button onclick="exportToExcel()" class="bg-white text-green-900 px-4 py-2 rounded font-bold text-sm hover:bg-green-100 transition">
+                            Скачать Excel
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-x-auto max-h-[600px]">
+                        <table id="results-table">
                             <thead>
                                 <tr>
-                                    <th class="w-16">Код</th>
+                                    <th>Тип</th>
+                                    <th>Код (ИД/ТМЦ)</th>
                                     <th>Наименование</th>
-                                    <th class="w-24 text-right">Было</th>
-                                    <th class="w-24 text-right">Стало</th>
-                                    <th class="w-24 text-right">Разница</th>
+                                    <th>Ед. изм.</th>
+                                    <th>Было (Кол-во)</th>
+                                    <th>Было (Сумма)</th>
+                                    <th>Стало (Кол-во)</th>
+                                    <th>Стало (Сумма)</th>
+                                    <th>Разница (Сумма)</th>
+                                    <th>Статус</th>
                                 </tr>
                             </thead>
-                            <tbody id="tableBody" class="text-gray-700">
-                                <tr>
-                                    <td colspan="5" class="text-center py-10 text-gray-400">
-                                        <i class="fa-solid fa-arrow-left text-2xl mb-2 block"></i>
-                                        Загрузите файлы слева для начала работы
-                                    </td>
-                                </tr>
+                            <tbody id="results-body">
+                                <!-- Данные будут здесь -->
                             </tbody>
                         </table>
                     </div>
                 </div>
+
+                <div class="text-center pb-10">
+                    <button onclick="resetApp()" class="text-green-700 underline hover:text-green-900 font-medium">
+                        Начать заново
+                    </button>
+                </div>
             </div>
-        </div>
+
+        </main>
     </div>
 
     <script>
-        let dataBefore = null;
-        let dataAfter = null;
+        // Глобальные переменные для хранения данных
+        let dataBefore = {};
+        let dataAfter = {};
+        let processedData = [];
 
         // Обработка выбора файла
         function handleFileSelect(input, type) {
             const file = input.files[0];
             if (!file) return;
 
-            const labelId = type === 'before' ? 'nameBefore' : 'nameAfter';
-            document.getElementById(labelId).textContent = file.name;
-            document.getElementById(labelId).classList.add('font-bold', 'text-green-800');
+            const statusDiv = document.getElementById(`status-${type}`);
+            statusDiv.classList.remove('hidden');
+            statusDiv.textContent = file.name;
+            
+            // Обновляем индикатор шага 1
+            updateStep(1, true);
 
             const reader = new FileReader();
             reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, {type: 'array'});
                 
-                // Пытаемся найти листы "СМР уник" или "ТМЦ уник", иначе первый лист
-                let sheetName = workbook.SheetNames.find(n => n.includes("СМР") || n.includes("ТМЦ")) || workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-
-                // Парсим данные в объект Map для быстрого поиска
-                const parsedData = parseExcelData(json);
+                const result = {};
                 
-                if (type === 'before') dataBefore = parsedData;
-                else dataAfter = parsedData;
+                // Читаем нужные листы
+                ['СМР уник', 'ТМЦ уник'].forEach(sheetName => {
+                    if (workbook.SheetNames.includes(sheetName)) {
+                        const worksheet = workbook.Sheets[sheetName];
+                        const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                        result[sheetName] = parseSheet(json, sheetName);
+                    }
+                });
+
+                if (type === 'before') {
+                    dataBefore = result;
+                } else {
+                    dataAfter = result;
+                }
+
+                checkReady();
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // Парсинг сырых данных Excel
-        function parseExcelData(rows) {
-            const map = new Map();
-            // Пропускаем заголовки (обычно первые 1-2 строки), ищем строки с данными
-            // Предполагаем структуру: Код | Наименование | ... | Сумма
+        // Парсинг листа Excel в объект по ключу (Код)
+        function parseSheet(rows, sheetName) {
+            const items = {};
+            // Пропускаем заголовок (строка 0), начинаем с 1
+            // Ожидаемая структура колонок может отличаться, адаптируем под стандарт
+            // Обычно: Код, Наименование, Ед, Кол-во, Цена, Сумма
             
-            rows.forEach((row, index) => {
-                if (index < 2) return; // Пропуск шапки
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+
+                // Пытаемся найти код. Часто это первая колонка или колонка с "ИД"
+                // Для универсальности берем первую непустую ячейку как ключ, если она похожа на код
+                let code = row[0]; 
+                let name = row[1] || '';
+                let unit = row[2] || '';
+                let qty = parseFloat(row[3]) || 0;
+                let price = parseFloat(row[4]) || 0;
+                let sum = parseFloat(row[5]) || (qty * price);
+
+                if (!code) continue;
                 
-                // Ищем ячейку с кодом (цифры или формат ИД.КЕР)
-                const codeCell = row.find(cell => typeof cell === 'string' && (cell.match(/^\d+$/) || cell.includes('.')));
-                if (!codeCell) return;
+                code = String(code).trim();
 
-                // Ищем сумму (последнее число в строке обычно сумма)
-                const numbers = row.filter(cell => typeof cell === 'number');
-                const sum = numbers.length > 0 ? numbers[numbers.length - 1] : 0;
-
-                // Наименование - самая длинная строка или то, что рядом с кодом
-                const nameCell = row.find(cell => typeof cell === 'string' && cell !== codeCell && cell.length > 5) || "Без названия";
-
-                map.set(String(codeCell).trim(), {
-                    code: codeCell,
-                    name: nameCell,
-                    sum: sum
-                });
-            });
-            return map;
+                items[code] = {
+                    code: code,
+                    name: name,
+                    unit: unit,
+                    qty: qty,
+                    price: price,
+                    sum: sum,
+                    type: sheetName.includes('СМР') ? 'СМР' : 'ТМЦ'
+                };
+            }
+            return items;
         }
 
-        // Основная логика сравнения
-        function processFiles() {
-            if (!dataBefore || !dataAfter) {
-                alert("Пожалуйста, загрузите оба файла!");
-                return;
+        function checkReady() {
+            if (Object.keys(dataBefore).length > 0 && Object.keys(dataAfter).length > 0) {
+                document.getElementById('action-area').classList.remove('hidden');
+                updateStep(1, true); // Завершаем шаг 1 визуально
             }
+        }
 
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-            
-            const allCodes = new Set([...dataBefore.keys(), ...dataAfter.keys()]);
-            let totalDiff = 0;
-            let rowCount = 0;
-
-            // Сортировка кодов
-            const sortedCodes = Array.from(allCodes).sort();
-
-            sortedCodes.forEach(code => {
-                const itemBefore = dataBefore.get(code);
-                const itemAfter = dataAfter.get(code);
-
-                const sumBefore = itemBefore ? itemBefore.sum : 0;
-                const sumAfter = itemAfter ? itemAfter.sum : 0;
-                const diff = sumAfter - sumBefore;
-                const name = (itemAfter ? itemAfter.name : itemBefore.name);
-
-                if (diff !== 0 || (itemBefore && itemAfter)) { // Показываем только изменения или полные совпадения (можно настроить)
-                    // Для отчета часто нужны все позиции, даже с 0 разницей, если они есть в обоих
-                    // Но чтобы не спамить, покажем всё, где есть хоть одна запись
-                    
-                    const tr = document.createElement('tr');
-                    
-                    // Форматирование разницы
-                    let diffClass = 'diff-zero';
-                    let diffSign = '';
-                    if (diff > 0) { diffClass = 'diff-positive'; diffSign = '+'; }
-                    if (diff < 0) { diffClass = 'diff-negative'; diffSign = ''; }
-
-                    tr.innerHTML = `
-                        <td class="font-mono text-xs">${code}</td>
-                        <td class="truncate max-w-xs" title="${name}">${name}</td>
-                        <td class="text-right font-mono">${sumBefore.toLocaleString('ru-RU')}</td>
-                        <td class="text-right font-mono">${sumAfter.toLocaleString('ru-RU')}</td>
-                        <td class="text-right font-mono ${diffClass}">${diffSign}${diff.toLocaleString('ru-RU')}</td>
-                    `;
-                    
-                    tbody.appendChild(tr);
-                    totalDiff += diff;
-                    rowCount++;
+        function updateStep(stepNum, completed) {
+            // Сброс всех до серого
+            for(let i=1; i<=4; i++) {
+                const el = document.getElementById(`step${i}-indicator`);
+                el.className = "step-indicator w-10 h-10 rounded-full border-2 bg-white flex items-center justify-center font-bold transition-all duration-300";
+                if (i < stepNum || (i === stepNum && completed)) {
+                     el.classList.add('step-completed');
+                } else if (i === stepNum && !completed) {
+                     el.classList.add('step-active');
+                } else {
+                     el.classList.add('border-gray-300', 'text-gray-400');
                 }
+            }
+        }
+
+        function processFiles() {
+            updateStep(2, false); // Показываем шаг 2 активным
+            document.getElementById('upload-screen').classList.add('hidden');
+            document.getElementById('action-area').classList.add('hidden');
+            document.getElementById('loading-screen').classList.remove('hidden');
+
+            // Имитация задержки для UX
+            setTimeout(() => {
+                compareData();
+                updateStep(2, true);
+                updateStep(3, true);
+                updateStep(4, true);
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('results-screen').classList.remove('hidden');
+                renderTable();
+            }, 800);
+        }
+
+        function compareData() {
+            processedData = [];
+            const allCodes = new Set([
+                ...Object.keys(dataBefore['СМР уник'] || {}),
+                ...Object.keys(dataBefore['ТМЦ уник'] || {}),
+                ...Object.keys(dataAfter['СМР уник'] || {}),
+                ...Object.keys(dataAfter['ТМЦ уник'] || {})
+            ]);
+
+            let totalDiffSum = 0;
+            let changedCount = 0;
+
+            allCodes.forEach(code => {
+                const itemBefore = (dataBefore['СМР уник']?.[code] || dataBefore['ТМЦ уник']?.[code]);
+                const itemAfter = (dataAfter['СМР уник']?.[code] || dataAfter['ТМЦ уник']?.[code]);
+
+                if (!itemBefore && !itemAfter) return;
+
+                const beforeSum = itemBefore ? itemBefore.sum : 0;
+                const afterSum = itemAfter ? itemAfter.sum : 0;
+                const diff = afterSum - beforeSum;
+
+                totalDiffSum += diff;
+                if (diff !== 0) changedCount++;
+
+                let status = 'Без изменений';
+                let statusClass = 'diff-zero';
+                
+                if (!itemBefore && itemAfter) {
+                    status = 'Добавлено';
+                    statusClass = 'diff-positive';
+                } else if (itemBefore && !itemAfter) {
+                    status = 'Удалено';
+                    statusClass = 'diff-negative';
+                } else if (diff > 0) {
+                    status = 'Увеличение';
+                    statusClass = 'diff-positive';
+                } else if (diff < 0) {
+                    status = 'Уменьшение';
+                    statusClass = 'diff-negative';
+                }
+
+                processedData.push({
+                    type: itemAfter ? itemAfter.type : itemBefore.type,
+                    code: code,
+                    name: itemAfter ? itemAfter.name : itemBefore.name,
+                    unit: itemAfter ? itemAfter.unit : itemBefore.unit,
+                    qtyBefore: itemBefore ? itemBefore.qty : 0,
+                    sumBefore: beforeSum,
+                    qtyAfter: itemAfter ? itemAfter.qty : 0,
+                    sumAfter: afterSum,
+                    diff: diff,
+                    status: status,
+                    statusClass: statusClass
+                });
             });
 
-            // Обновление статистики
-            document.getElementById('stats').classList.remove('hidden');
-            document.getElementById('countRows').textContent = rowCount;
+            // Сортировка: сначала изменения, потом по коду
+            processedData.sort((a, b) => {
+                if (a.diff === 0 && b.diff !== 0) return 1;
+                if (a.diff !== 0 && b.diff === 0) return -1;
+                return a.code.localeCompare(b.code);
+            });
+
+            // Обновление сводки
+            document.getElementById('total-count').textContent = processedData.length;
+            document.getElementById('changed-count').textContent = changedCount;
             
-            const sumEl = document.getElementById('sumDiff');
-            sumEl.textContent = totalDiff.toLocaleString('ru-RU');
-            sumEl.className = totalDiff >= 0 ? 'font-bold text-green-600' : 'font-bold text-red-600';
+            const diffEl = document.getElementById('total-diff');
+            diffEl.textContent = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(totalDiffSum);
+            diffEl.className = `text-3xl font-bold ${totalDiffSum >= 0 ? 'text-green-600' : 'text-red-600'}`;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('results-body');
+            tbody.innerHTML = '';
+
+            processedData.forEach(row => {
+                const tr = document.createElement('tr');
+                
+                const diffFormatted = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(row.diff);
+                const sumBeforeFmt = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(row.sumBefore);
+                const sumAfterFmt = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(row.sumAfter);
+
+                tr.innerHTML = `
+                    <td class="font-bold text-gray-500">${row.type}</td>
+                    <td class="font-mono text-sm">${row.code}</td>
+                    <td class="max-w-xs truncate" title="${row.name}">${row.name}</td>
+                    <td>${row.unit}</td>
+                    <td>${row.qtyBefore}</td>
+                    <td>${sumBeforeFmt}</td>
+                    <td>${row.qtyAfter}</td>
+                    <td>${sumAfterFmt}</td>
+                    <td class="${row.statusClass}">${diff > 0 ? '+' : ''}${diffFormatted}</td>
+                    <td class="font-semibold ${row.statusClass}">${row.status}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function exportToExcel() {
+            const ws_data = [
+                ["Тип", "Код", "Наименование", "Ед.изм", "Кол-во (Было)", "Сумма (Было)", "Кол-во (Стало)", "Сумма (Стало)", "Разница", "Статус"]
+            ];
+
+            processedData.forEach(row => {
+                ws_data.push([
+                    row.type,
+                    row.code,
+                    row.name,
+                    row.unit,
+                    row.qtyBefore,
+                    row.sumBefore,
+                    row.qtyAfter,
+                    row.sumAfter,
+                    row.diff,
+                    row.status
+                ]);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            XLSX.utils.book_append_sheet(wb, ws, "Сравнение");
+            XLSX.writeFile(wb, "StateDiff_Result.xlsx");
+        }
+
+        function resetApp() {
+            location.reload();
         }
     </script>
 </body>
