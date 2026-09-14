@@ -1,0 +1,244 @@
+@import "tailwindcss";
+
+:root {
+  --bg-color: #eef2ec;
+  --grid-line: rgba(21, 38, 32, 0.05);
+  --primary-green: #1e7145;
+  --dark-green: #123f28;
+  --light-green: #e0efe5;
+  --border-color: #cfd9d0;
+  --text-gray: #42544b;
+}
+
+body {
+  margin: 0;
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-color);
+  background-image: 
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 26px 26px;
+  min-height: 100vh;
+}
+
+/* Фоновые градиенты */
+.bg-gradient-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: 
+    radial-gradient(circle at 80% 20%, rgba(30, 113, 69, 0.12) 0%, transparent 50%),
+    radial-gradient(circle at 20% 80%, rgba(30, 113, 69, 0.08) 0%, transparent 50%);
+}
+
+/* Плавающие декоративные элементы */
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
+}
+
+.float-symbol {
+  animation: float-soft 9s ease-in-out infinite;
+  opacity: 0.15;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 48px;
+  color: var(--primary-green);
+  position: absolute;
+}
+
+/* Анимация появления */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise-in {
+  animation: rise-in 0.45s ease-out forwards;
+}
+
+/* Жёсткая тень */
+.shadow-hard {
+  box-shadow: 5px 6px 0 rgba(21, 38, 32, 0.07);
+}
+
+.shadow-hard-sm {
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.25);
+}
+
+/* Шрифты */
+.font-unbounded {
+  font-family: 'Unbounded', sans-serif;
+}
+
+.font-mono {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* Drag & Drop зона */
+.dropzone {
+  border: 2px dashed var(--border-color);
+  background: rgba(240, 247, 242, 0.4);
+  transition: all 0.2s ease;
+}
+
+.dropzone:hover {
+  border-color: var(--primary-green);
+  background: rgba(240, 247, 242, 1);
+}
+
+.dropzone.drag-over {
+  border-color: var(--primary-green);
+  background: var(--light-green);
+  transform: scale(1.01);
+}
+
+/* Прогресс-рейл */
+.step-done {
+  background: var(--light-green);
+  color: var(--dark-green);
+}
+
+.step-current {
+  background: var(--primary-green);
+  color: white;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.25);
+}
+
+.step-locked {
+  background: white;
+  color: #9ca3af;
+}
+
+.step-connector-done {
+  background: var(--primary-green);
+}
+
+.step-connector-future {
+  background: var(--border-color);
+}
+
+/* Анимация бегущего пунктира */
+@keyframes dash-move {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.dash-animated {
+  stroke-dasharray: 5, 5;
+  animation: dash-move 1s linear infinite;
+}
+
+/* Карточки */
+.card {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 5px 6px 0 rgba(21, 38, 32, 0.07);
+}
+
+/* Кнопки */
+.btn-primary {
+  background: var(--primary-green);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-weight: 600;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.25);
+  transition: transform 0.1s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-gray);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 8px 16px;
+  transition: all 0.2s ease;
+}
+
+.btn-ghost:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+/* Excel мини-таблица */
+.mini-excel {
+  font-size: 11px;
+  border-collapse: collapse;
+}
+
+.mini-excel th {
+  background: #D8D8D8;
+  padding: 4px 6px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+}
+
+.mini-excel td {
+  padding: 4px 6px;
+  border: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.cell-new {
+  background: rgba(30, 113, 69, 0.1);
+  animation: cell-flash 1.5s ease-out;
+}
+
+@keyframes cell-flash {
+  0%, 100% { background: rgba(30, 113, 69, 0.1); }
+  50% { background: rgba(30, 113, 69, 0.25); }
+}
+
+.cell-key {
+  border: 2px solid var(--primary-green);
+  position: relative;
+}
+
+.cell-key::before {
+  content: '◆';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  color: var(--primary-green);
+  font-size: 10px;
+}
+
+/* Спиннер загрузки */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-green);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Утилиты */
+.text-primary { color: var(--primary-green); }
+.bg-primary { background: var(--primary-green); }
+.border-primary { border-color: var(--primary-green); }
