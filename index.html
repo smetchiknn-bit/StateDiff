@@ -200,16 +200,15 @@
                 </div>
             </div>
 
-            <!-- Кнопка запуска и сообщение о безопасности -->
+            <!-- Кнопка запуска -->
             <div id="action-area" class="text-center mt-10 hidden">
                 <button onclick="processFiles()" class="btn-primary px-10 py-4 rounded-lg text-lg uppercase tracking-wider hover:bg-green-600">
                     Сравнить данные
                 </button>
-                
-                <!-- СООБЩЕНИЕ О БЕЗОПАСНОСТИ -->
-                <p class="mt-4 text-sm text-green-800 font-medium flex items-center justify-center gap-2 bg-green-50 inline-block px-4 py-2 rounded-lg border border-green-200">
-                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                    🔒 Файлы обрабатываются локально, никуда не отправляются
+                <!-- Измененное сообщение без замка -->
+                <p class="mt-4 text-sm text-green-700 flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    файлы обрабатываются локально, никуда не отправляются
                 </p>
             </div>
 
@@ -291,7 +290,6 @@
         let fileNameAfter = "";
         let checksums = { before: { smr: 0, tmc: 0, total: 0 }, after: { smr: 0, tmc: 0, total: 0 } };
 
-        // Форматтер для экрана (русская локаль)
         const fmtMoney = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
         function handleFileSelect(input, type) {
@@ -322,7 +320,6 @@
                         const parsed = parseSheet(json, sheetName);
                         result[sheetName] = parsed;
                         
-                        // Расчет контрольных сумм
                         Object.values(parsed).forEach(item => {
                             if (sheetName.includes('СМР')) sumSmr += item.sum;
                             else sumTmc += item.sum;
@@ -368,7 +365,6 @@
 
         function checkReady() {
             if (Object.keys(dataBefore).length > 0 && Object.keys(dataAfter).length > 0) {
-                // Показываем контрольные суммы
                 document.getElementById('sum-before-smr').textContent = fmtMoney.format(checksums.before.smr);
                 document.getElementById('sum-before-tmc').textContent = fmtMoney.format(checksums.before.tmc);
                 document.getElementById('sum-before-total').textContent = fmtMoney.format(checksums.before.total);
@@ -551,29 +547,28 @@
             const workbook = new ExcelJS.Workbook();
             const worksheet = workbook.addWorksheet('Было-Стало');
 
-            // Настройка колонок (ширины как в макросе)
             worksheet.columns = [
-                { key: 'id', width: 8 },       // A
-                { key: 'name', width: 54 },   // B
-                { key: 'unit', width: 7 },    // C
-                { key: 'qty_was', width: 13 },// D
-                { key: 'price_was', width: 13 },// E
-                { key: 'sum_was', width: 13 },// F
-                { key: 'qty_bec', width: 13 },// G
-                { key: 'price_bec', width: 13 },// H
-                { key: 'sum_bec', width: 13 },// I
-                { key: 'diff', width: 13 }    // J
+                { key: 'id', width: 8 },
+                { key: 'name', width: 54 },
+                { key: 'unit', width: 7 },
+                { key: 'qty_was', width: 13 },
+                { key: 'price_was', width: 13 },
+                { key: 'sum_was', width: 13 },
+                { key: 'qty_bec', width: 13 },
+                { key: 'price_bec', width: 13 },
+                { key: 'sum_bec', width: 13 },
+                { key: 'diff', width: 13 }
             ];
 
-            // Цвета (ARGB) - уточненные
             const C_WAS = 'FFFFCC'; 
             const C_BECAME = 'FFCCFFCC';
             const C_DIFF_HEADER = 'FFFF0000'; 
             const C_HEADER_GRAY = 'FFC0C0C0';
             const C_TOTAL_MAIN = 'FFCCFFCC';
             const C_SECTION = 'FF00B0F0';
+            const C_WHITE = 'FFFFFFFF'; // Явный белый цвет
 
-            // 1. Шапка (Строка 1)
+            // 1. Шапка
             worksheet.mergeCells('A1:B1');
             const cellTitle = worksheet.getCell('A1');
             cellTitle.value = `${fileNameBefore}\n${fileNameAfter}`;
@@ -581,20 +576,14 @@
             worksheet.getRow(1).height = 44;
 
             worksheet.mergeCells('C1:F1');
-            const cWas = worksheet.getCell('C1');
-            cWas.value = 'БЫЛО';
-            cellInfo(cWas, { font: { name: 'Arial', size: 14, bold: true }, align: 'center', bg: C_WAS, border: true });
+            cellInfo(worksheet.getCell('C1'), { value: 'БЫЛО', font: { name: 'Arial', size: 14, bold: true }, align: 'center', bg: C_WAS, border: true });
 
             worksheet.mergeCells('G1:I1');
-            const cBec = worksheet.getCell('G1');
-            cBec.value = 'СТАЛО';
-            cellInfo(cBec, { font: { name: 'Arial', size: 14, bold: true }, align: 'center', bg: C_BECAME, border: true });
+            cellInfo(worksheet.getCell('G1'), { value: 'СТАЛО', font: { name: 'Arial', size: 14, bold: true }, align: 'center', bg: C_BECAME, border: true });
 
-            const cDiff = worksheet.getCell('J1');
-            cDiff.value = 'РАЗНИЦА';
-            cellInfo(cDiff, { font: { name: 'Arial', size: 14, bold: true }, align: 'center', bg: C_DIFF_HEADER, fontColor: 'FFFFFFFF', border: true });
+            cellInfo(worksheet.getCell('J1'), { value: 'РАЗНИЦА', font: { name: 'Arial', size: 14, bold: true }, align: 'center', bg: C_DIFF_HEADER, fontColor: 'FFFFFFFF', border: true });
 
-            // 2. Заголовки колонок (Строка 2)
+            // 2. Заголовки колонок
             const headers = [
                 'ИД.КЕР/ТМЦ', 'Наименование КЕР/ТМЦ', 'ЕдИзм КЕР/ТМЦ',
                 'Объем СМР/ТМЦ Всего в СР', 'СМР/ТМЦ за ЕдИзм', 'СМР/ТМЦ Всего',
@@ -605,8 +594,7 @@
             worksheet.getRow(2).height = 34;
             
             for (let i = 1; i <= 10; i++) {
-                const cell = worksheet.getCell(2, i);
-                cellInfo(cell, { 
+                cellInfo(worksheet.getCell(2, i), { 
                     font: { name: 'Aptos Narrow', size: 8 }, 
                     align: 'center', 
                     wrap: true, 
@@ -617,13 +605,10 @@
 
             let currentRow = 3;
             
-            // --- ВСЕГО СМР+ТМЦ (Строка 3) ---
+            // --- ВСЕГО СМР+ТМЦ ---
             worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
-            const cellTotalAll = worksheet.getCell(`B${currentRow}`);
-            cellTotalAll.value = 'ВСЕГО СМР+ТМЦ';
-            cellInfo(cellTotalAll, { font: { name: 'Aptos Narrow', size: 10 }, align: 'center', bg: C_TOTAL_MAIN, border: true });
+            cellInfo(worksheet.getCell(`B${currentRow}`), { value: 'ВСЕГО СМР+ТМЦ', font: { name: 'Aptos Narrow', size: 10 }, align: 'center', bg: C_TOTAL_MAIN, border: true });
             
-            // Расчет общих сумм
             let gWas = 0, gBec = 0;
             Object.values(dataBefore['СМР уник']||{}).forEach(i=>gWas+=i.sum);
             Object.values(dataBefore['ТМЦ уник']||{}).forEach(i=>gWas+=i.sum);
@@ -634,25 +619,15 @@
             setMoneyCell(worksheet, currentRow, 9, gBec);
             setMoneyCell(worksheet, currentRow, 10, gBec - gWas);
             
-            // Заливка ячеек с цифрами
             worksheet.getCell(`F${currentRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TOTAL_MAIN } };
             worksheet.getCell(`I${currentRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TOTAL_MAIN } };
             worksheet.getCell(`J${currentRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TOTAL_MAIN } };
-            // Заливка пустых ячеек в этой строке (чтобы не было белых дыр)
-            for(let c=1; c<=10; c++) {
-                if(c!==6 && c!==9 && c!==10) {
-                     const emptyCell = worksheet.getCell(currentRow, c);
-                     if(!emptyCell.fill) emptyCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TOTAL_MAIN } };
-                }
-            }
-
+            
             worksheet.getRow(currentRow).height = 13;
             currentRow++;
 
-            // --- СМР (Строка 4) ---
-            const cellSmrTitle = worksheet.getCell(`B${currentRow}`);
-            cellSmrTitle.value = 'СМР';
-            cellInfo(cellSmrTitle, { font: { name: 'Aptos Narrow', size: 10 }, align: 'center', bg: C_SECTION, border: true });
+            // --- СМР ---
+            cellInfo(worksheet.getCell(`B${currentRow}`), { value: 'СМР', font: { name: 'Aptos Narrow', size: 10 }, align: 'center', bg: C_SECTION, border: true });
             
             let sumSmrWas = 0, sumSmrBec = 0;
             Object.values(dataBefore['СМР уник'] || {}).forEach(i => sumSmrWas += i.sum);
@@ -665,14 +640,6 @@
             worksheet.getCell(`F${currentRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_SECTION } };
             worksheet.getCell(`I${currentRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_SECTION } };
             worksheet.getCell(`J${currentRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_SECTION } };
-             // Заливка пустых ячеек в этой строке
-             for(let c=1; c<=10; c++) {
-                if(c!==6 && c!==9 && c!==10) {
-                     const emptyCell = worksheet.getCell(currentRow, c);
-                     if(!emptyCell.fill) emptyCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_SECTION } };
-                }
-            }
-
             worksheet.getRow(currentRow).height = 13;
             currentRow++;
 
@@ -703,19 +670,14 @@
 
                 for (let i = 1; i <= 10; i++) {
                     const cell = row.getCell(i);
+                    // ИСПРАВЛЕНИЕ: Явно задаем белый фон для всех ячеек данных, если это не новая строка
                     const style = {
                         font: { name: 'Aptos Narrow', size: 8 },
                         border: true,
                         align: (i === 1 || i === 3) ? 'center' : (i === 2 ? 'left' : 'right'),
-                        wrap: (i === 2)
+                        wrap: (i === 2),
+                        bg: isNew ? null : C_WHITE // Если новая - без заливки (null), иначе белая
                     };
-                    
-                    // Логика заливки: если новая строка - без заливки, иначе стандартная (белая/зеленая/желтая)
-                    // Но так как мы пишем значения во все ячейки, они не пустые. 
-                    // Если бы были пустые, мы бы красили их здесь.
-                    if (isNew) style.bg = null;
-                    else style.bg = '#FFFFFF'; // Явно задаем белый фон для обычных строк, чтобы перекрыть наследование
-                    
                     cellInfo(cell, style);
                     
                     if ([6, 9, 10].includes(i)) {
@@ -725,11 +687,9 @@
                 currentRow++;
             });
 
-            // --- ТМЦ (Строка разделитель) ---
+            // --- ТМЦ ---
             const tmciRow = currentRow;
-            const cellTmcTitle = worksheet.getCell(`B${tmciRow}`);
-            cellTmcTitle.value = 'ТМЦ';
-            cellInfo(cellTmcTitle, { font: { name: 'Aptos Narrow', size: 10 }, align: 'center', bg: C_SECTION, border: true });
+            cellInfo(worksheet.getCell(`B${tmciRow}`), { value: 'ТМЦ', font: { name: 'Aptos Narrow', size: 10 }, align: 'center', bg: C_SECTION, border: true });
             
             let sumTmcWas = 0, sumTmcBec = 0;
             Object.values(dataBefore['ТМЦ уник'] || {}).forEach(i => sumTmcWas += i.sum);
@@ -742,14 +702,6 @@
             worksheet.getCell(`F${tmciRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_SECTION } };
             worksheet.getCell(`I${tmciRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_SECTION } };
             worksheet.getCell(`J${tmciRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_SECTION } };
-            // Заливка пустых ячеек
-            for(let c=1; c<=10; c++) {
-                if(c!==6 && c!==9 && c!==10) {
-                     const emptyCell = worksheet.getCell(tmciRow, c);
-                     if(!emptyCell.fill) emptyCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_SECTION } };
-                }
-            }
-
             worksheet.getRow(tmciRow).height = 13;
             currentRow++;
 
@@ -784,11 +736,9 @@
                         font: { name: 'Aptos Narrow', size: 8 },
                         border: true,
                         align: (i === 1 || i === 3) ? 'center' : (i === 2 ? 'left' : 'right'),
-                        wrap: (i === 2)
+                        wrap: (i === 2),
+                        bg: isNew ? null : C_WHITE
                     };
-                    if (isNew) style.bg = null;
-                    else style.bg = '#FFFFFF';
-
                     cellInfo(cell, style);
                     if ([6, 9, 10].includes(i)) {
                         cell.numFmt = '#,##0.00_ ;[Red]-#,##0.00';
@@ -797,7 +747,7 @@
                 currentRow++;
             });
 
-            // Границы на весь диапазон
+            // Границы
             const lastRow = currentRow - 1;
             worksheet.eachRow(row => {
                 if (row.number <= lastRow) {
@@ -814,13 +764,13 @@
                 }
             });
 
-            // Скачивание
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
             saveAs(blob, "StateDiff_Report.xlsx");
         }
 
         function cellInfo(cell, opts) {
+            if (opts.value) cell.value = opts.value;
             if (opts.font) cell.font = opts.font;
             if (opts.align) {
                 cell.alignment = { 
@@ -829,9 +779,12 @@
                     wrapText: !!opts.wrap 
                 };
             }
-            if (opts.bg) {
+            // Исправленная логика заливки: если передан bg (даже белый), применяем его.
+            // Если bg === null, то не применяем заливку (остается прозрачной/стандартной).
+            if (opts.bg !== undefined && opts.bg !== null) {
                 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: opts.bg } };
             }
+            
             if (opts.fontColor) cell.font = { ...cell.font, color: { argb: opts.fontColor } };
             if (opts.border) {
                 cell.border = {
