@@ -119,6 +119,38 @@
         ::-webkit-scrollbar { width: 10px; height: 10px; }
         ::-webkit-scrollbar-track { background: #f0fdf4; }
         ::-webkit-scrollbar-thumb { background: #16a34a; border-radius: 5px; border: 2px solid #f0fdf4; }
+
+        /* Стили для модального окна версий */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 2px solid #14532d;
+            box-shadow: 8px 8px 0px rgba(20, 83, 45, 0.2);
+        }
+        .version-item {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1rem 0;
+        }
+        .version-item:last-child { border-bottom: none; }
+        .version-title { font-weight: bold; color: #14532d; font-size: 1.1rem; }
+        .version-date { font-size: 0.85rem; color: #6b7280; margin-bottom: 0.5rem; }
+        .version-changes { list-style-type: disc; padding-left: 1.2rem; color: #374151; font-size: 0.9rem; }
+        .version-changes li { margin-bottom: 0.25rem; }
     </style>
 </head>
 <body class="relative">
@@ -279,9 +311,45 @@
             </div>
 
         </main>
+
+        <!-- Футер с версией -->
+        <footer class="mt-12 mb-6 text-center">
+            <button onclick="toggleVersionModal()" class="text-xs text-green-300 hover:text-green-600 transition-colors cursor-pointer select-none">
+                Версия 1.0 (14.09.2026)
+            </button>
+        </footer>
+    </div>
+
+    <!-- Модальное окно истории версий -->
+    <div id="version-modal" class="modal-overlay" onclick="if(event.target === this) toggleVersionModal()">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4 border-b border-green-200 pb-2">
+                <h3 class="text-xl font-bold text-green-900">История стабильных версий</h3>
+                <button onclick="toggleVersionModal()" class="text-gray-400 hover:text-red-500 text-2xl">&times;</button>
+            </div>
+            <div id="version-list">
+                <!-- Список заполняется JS -->
+            </div>
+        </div>
     </div>
 
     <script>
+        // История версий
+        const versionHistory = [
+            {
+                version: "1.0",
+                date: "14.09.2026",
+                changes: [
+                    "Первый стабильный релиз приложения.",
+                    "Сравнение файлов 'Было' и 'Стало' (КЕР и ТМЦ).",
+                    "Контрольные суммы для проверки данных перед обработкой.",
+                    "Экспорт в Excel с полным форматированием (цвета, шрифты, границы, русская локаль чисел).",
+                    "Локальная обработка данных без отправки на сервер.",
+                    "Адаптивный дизайн в фирменном стиле."
+                ]
+            }
+        ];
+
         let dataBefore = {};
         let dataAfter = {};
         let reportRows = [];
@@ -290,6 +358,27 @@
         let checksums = { before: { smr: 0, tmc: 0, total: 0 }, after: { smr: 0, tmc: 0, total: 0 } };
 
         const fmtMoney = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        function toggleVersionModal() {
+            const modal = document.getElementById('version-modal');
+            const list = document.getElementById('version-list');
+            
+            if (modal.classList.contains('active')) {
+                modal.classList.remove('active');
+            } else {
+                // Генерация списка при открытии
+                list.innerHTML = versionHistory.map(v => `
+                    <div class="version-item">
+                        <div class="version-title">Версия ${v.version}</div>
+                        <div class="version-date">${v.date}</div>
+                        <ul class="version-changes">
+                            ${v.changes.map(c => `<li>${c}</li>`).join('')}
+                        </ul>
+                    </div>
+                `).join('');
+                modal.classList.add('active');
+            }
+        }
 
         function handleFileSelect(input, type) {
             const file = input.files[0];
@@ -547,25 +636,15 @@
             const worksheet = workbook.addWorksheet('Было-Стало');
 
             worksheet.columns = [
-                { key: 'id', width: 8 },
-                { key: 'name', width: 54 },
-                { key: 'unit', width: 7 },
-                { key: 'qty_was', width: 13 },
-                { key: 'price_was', width: 13 },
-                { key: 'sum_was', width: 13 },
-                { key: 'qty_bec', width: 13 },
-                { key: 'price_bec', width: 13 },
-                { key: 'sum_bec', width: 13 },
+                { key: 'id', width: 8 }, { key: 'name', width: 54 }, { key: 'unit', width: 7 },
+                { key: 'qty_was', width: 13 }, { key: 'price_was', width: 13 }, { key: 'sum_was', width: 13 },
+                { key: 'qty_bec', width: 13 }, { key: 'price_bec', width: 13 }, { key: 'sum_bec', width: 13 },
                 { key: 'diff', width: 13 }
             ];
 
-            const C_WAS = 'FFFFCC'; 
-            const C_BECAME = 'FFCCFFCC';
-            const C_DIFF_HEADER = 'FFFF0000'; 
-            const C_HEADER_GRAY = 'FFC0C0C0';
-            const C_TOTAL_MAIN = 'FFCCFFCC';
-            const C_SECTION = 'FF00B0F0';
-            const C_WHITE = 'FFFFFFFF'; // Белый цвет для фона данных
+            const C_WAS = 'FFFFCC', C_BECAME = 'FFCCFFCC', C_DIFF_HEADER = 'FFFF0000', 
+                  C_HEADER_GRAY = 'FFC0C0C0', C_TOTAL_MAIN = 'FFCCFFCC', C_SECTION = 'FF00B0F0',
+                  WHITE_FILL = 'FFFFFFFF';
 
             // 1. Шапка
             worksheet.mergeCells('A1:B1');
@@ -588,7 +667,7 @@
             cDiff.value = 'РАЗНИЦА';
             cellInfo(cDiff, { font: { name: 'Arial', size: 14, bold: true }, align: 'center', bg: C_DIFF_HEADER, fontColor: 'FFFFFFFF', border: true });
 
-            // 2. Заголовки колонок
+            // 2. Заголовки
             const headers = [
                 'ИД.КЕР/ТМЦ', 'Наименование КЕР/ТМЦ', 'ЕдИзм КЕР/ТМЦ',
                 'Объем СМР/ТМЦ Всего в СР', 'СМР/ТМЦ за ЕдИзм', 'СМР/ТМЦ Всего',
@@ -597,27 +676,24 @@
             ];
             worksheet.getRow(2).values = headers;
             worksheet.getRow(2).height = 34;
-            
             for (let i = 1; i <= 10; i++) {
-                const cell = worksheet.getCell(2, i);
-                cellInfo(cell, { 
-                    font: { name: 'Aptos Narrow', size: 8 }, 
-                    align: 'center', 
-                    wrap: true, 
-                    bg: C_HEADER_GRAY, 
-                    border: true 
-                });
+                cellInfo(worksheet.getCell(2, i), { font: { name: 'Aptos Narrow', size: 8 }, align: 'center', wrap: true, bg: C_HEADER_GRAY, border: true });
             }
 
             let currentRow = 3;
             
             // --- ВСЕГО СМР+ТМЦ (Строка 3) ---
-            // Заливаем всю строку A-J цветом C_TOTAL_MAIN
-            const rowTotalAll = worksheet.getRow(currentRow);
             worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
             const cellTotalAll = worksheet.getCell(`B${currentRow}`);
             cellTotalAll.value = 'ВСЕГО СМР+ТМЦ';
-            cellInfo(cellTotalAll, { font: { name: 'Aptos Narrow', size: 10 }, align: 'center', bg: C_TOTAL_MAIN, border: true });
+            // Заливка всей строки A:J
+            for(let col=1; col<=10; col++) {
+                const c = worksheet.getCell(currentRow, col);
+                c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TOTAL_MAIN } };
+                c.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'}, color: {argb:'FF000000'} };
+                if(col !== 2) c.value = null; // Очищаем значение, кроме B
+            }
+            cellInfo(cellTotalAll, { font: { name: 'Aptos Narrow', size: 10 }, align: 'center', border: false }); // border уже установлен
             
             let gWas = 0, gBec = 0;
             Object.values(dataBefore['СМР уник']||{}).forEach(i=>gWas+=i.sum);
@@ -625,46 +701,31 @@
             Object.values(dataAfter['СМР уник']||{}).forEach(i=>gBec+=i.sum);
             Object.values(dataAfter['ТМЦ уник']||{}).forEach(i=>gBec+=i.sum);
 
-            setMoneyCell(worksheet, currentRow, 6, gWas, C_TOTAL_MAIN);
-            setMoneyCell(worksheet, currentRow, 9, gBec, C_TOTAL_MAIN);
-            setMoneyCell(worksheet, currentRow, 10, gBec - gWas, C_TOTAL_MAIN);
-
-            // Явная заливка пустых ячеек в этой строке
-            for(let col=1; col<=10; col++) {
-                if(col !== 2 && col !== 6 && col !== 9 && col !== 10) {
-                     const c = worksheet.getCell(currentRow, col);
-                     c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TOTAL_MAIN } };
-                     c.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'} };
-                }
-            }
-
+            setMoneyCell(worksheet, currentRow, 6, gWas);
+            setMoneyCell(worksheet, currentRow, 9, gBec);
+            setMoneyCell(worksheet, currentRow, 10, gBec - gWas);
             worksheet.getRow(currentRow).height = 13;
             currentRow++;
 
             // --- СМР (Строка 4) ---
-            // Заливаем всю строку A-J цветом C_SECTION
-            const rowSmr = worksheet.getRow(currentRow);
             const cellSmrTitle = worksheet.getCell(`B${currentRow}`);
             cellSmrTitle.value = 'СМР';
-            cellInfo(cellSmrTitle, { font: { name: 'Aptos Narrow', size: 10 }, align: 'center', bg: C_SECTION, border: true });
+            // Заливка всей строки A:J
+            for(let col=1; col<=10; col++) {
+                const c = worksheet.getCell(currentRow, col);
+                c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_SECTION } };
+                c.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'}, color: {argb:'FF000000'} };
+                if(col !== 2) c.value = null;
+            }
+            cellInfo(cellSmrTitle, { font: { name: 'Aptos Narrow', size: 10 }, align: 'center', border: false });
             
             let sumSmrWas = 0, sumSmrBec = 0;
             Object.values(dataBefore['СМР уник'] || {}).forEach(i => sumSmrWas += i.sum);
             Object.values(dataAfter['СМР уник'] || {}).forEach(i => sumSmrBec += i.sum);
             
-            setMoneyCell(worksheet, currentRow, 6, sumSmrWas, C_SECTION);
-            setMoneyCell(worksheet, currentRow, 9, sumSmrBec, C_SECTION);
-            setMoneyCell(worksheet, currentRow, 10, sumSmrBec - sumSmrWas, C_SECTION);
-
-            // Явная заливка пустых ячеек
-            for(let col=1; col<=10; col++) {
-                if(col !== 2 && col !== 6 && col !== 9 && col !== 10) {
-                     const c = worksheet.getCell(currentRow, col);
-                     c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_SECTION } };
-                     c.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'} };
-                }
-            }
-
+            setMoneyCell(worksheet, currentRow, 6, sumSmrWas);
+            setMoneyCell(worksheet, currentRow, 9, sumSmrBec);
+            setMoneyCell(worksheet, currentRow, 10, sumSmrBec - sumSmrWas);
             worksheet.getRow(currentRow).height = 13;
             currentRow++;
 
@@ -673,70 +734,48 @@
             Array.from(codesSmr).sort().forEach(code => {
                 const itemB = dataBefore['СМР уник']?.[code];
                 const itemA = dataAfter['СМР уник']?.[code];
-                
                 const wasSum = itemB ? itemB.sum : 0;
                 const becSum = itemA ? itemA.sum : 0;
                 const diff = becSum - wasSum;
                 const isNew = !itemB && itemA;
 
                 const row = worksheet.getRow(currentRow);
-                row.values = [
-                    code, 
-                    itemA ? itemA.name : itemB.name, 
-                    itemA ? itemA.unit : itemB.unit,
-                    itemB ? itemB.qty : 0,
-                    itemB ? itemB.price : 0,
-                    wasSum,
-                    itemA ? itemA.qty : 0,
-                    itemA ? itemA.price : 0,
-                    becSum,
-                    diff
-                ];
+                row.values = [code, itemA ? itemA.name : itemB.name, itemA ? itemA.unit : itemB.unit,
+                    itemB ? itemB.qty : 0, itemB ? itemB.price : 0, wasSum,
+                    itemA ? itemA.qty : 0, itemA ? itemA.price : 0, becSum, diff];
 
                 for (let i = 1; i <= 10; i++) {
                     const cell = row.getCell(i);
-                    const style = {
-                        font: { name: 'Aptos Narrow', size: 8 },
-                        border: true,
-                        align: (i === 1 || i === 3) ? 'center' : (i === 2 ? 'left' : 'right'),
-                        wrap: (i === 2),
-                        bg: C_WHITE // Явная белая заливка для всех ячеек данных
-                    };
-                    if (isNew) style.bg = C_WHITE; // Новые тоже белые
+                    // Белая заливка для всех ячеек строки данных
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: WHITE_FILL } };
+                    const style = { font: { name: 'Aptos Narrow', size: 8 }, border: true, align: (i === 1 || i === 3) ? 'center' : (i === 2 ? 'left' : 'right'), wrap: (i === 2) };
+                    if (isNew) style.bg = null; 
                     cellInfo(cell, style);
-                    
-                    if ([6, 9, 10].includes(i)) {
-                        cell.numFmt = '#,##0.00_ ;[Red]-#,##0.00';
-                    }
+                    if ([6, 9, 10].includes(i)) cell.numFmt = '#,##0.00_ ;[Red]-#,##0.00';
                 }
                 currentRow++;
             });
 
             // --- ТМЦ (Строка разделитель) ---
             const tmciRow = currentRow;
-            // Заливаем всю строку A-J цветом C_SECTION
-            const rowTmc = worksheet.getRow(tmciRow);
             const cellTmcTitle = worksheet.getCell(`B${tmciRow}`);
             cellTmcTitle.value = 'ТМЦ';
-            cellInfo(cellTmcTitle, { font: { name: 'Aptos Narrow', size: 10 }, align: 'center', bg: C_SECTION, border: true });
+            // Заливка всей строки A:J
+            for(let col=1; col<=10; col++) {
+                const c = worksheet.getCell(tmciRow, col);
+                c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_SECTION } };
+                c.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'}, color: {argb:'FF000000'} };
+                if(col !== 2) c.value = null;
+            }
+            cellInfo(cellTmcTitle, { font: { name: 'Aptos Narrow', size: 10 }, align: 'center', border: false });
             
             let sumTmcWas = 0, sumTmcBec = 0;
             Object.values(dataBefore['ТМЦ уник'] || {}).forEach(i => sumTmcWas += i.sum);
             Object.values(dataAfter['ТМЦ уник'] || {}).forEach(i => sumTmcBec += i.sum);
 
-            setMoneyCell(worksheet, tmciRow, 6, sumTmcWas, C_SECTION);
-            setMoneyCell(worksheet, tmciRow, 9, sumTmcBec, C_SECTION);
-            setMoneyCell(worksheet, tmciRow, 10, sumTmcBec - sumTmcWas, C_SECTION);
-
-            // Явная заливка пустых ячеек
-            for(let col=1; col<=10; col++) {
-                if(col !== 2 && col !== 6 && col !== 9 && col !== 10) {
-                     const c = worksheet.getCell(tmciRow, col);
-                     c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_SECTION } };
-                     c.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'} };
-                }
-            }
-
+            setMoneyCell(worksheet, tmciRow, 6, sumTmcWas);
+            setMoneyCell(worksheet, tmciRow, 9, sumTmcBec);
+            setMoneyCell(worksheet, tmciRow, 10, sumTmcBec - sumTmcWas);
             worksheet.getRow(tmciRow).height = 13;
             currentRow++;
 
@@ -745,40 +784,23 @@
             Array.from(codesTmc).sort().forEach(code => {
                 const itemB = dataBefore['ТМЦ уник']?.[code];
                 const itemA = dataAfter['ТМЦ уник']?.[code];
-                
                 const wasSum = itemB ? itemB.sum : 0;
                 const becSum = itemA ? itemA.sum : 0;
                 const diff = becSum - wasSum;
                 const isNew = !itemB && itemA;
 
                 const row = worksheet.getRow(currentRow);
-                row.values = [
-                    code, 
-                    itemA ? itemA.name : itemB.name, 
-                    itemA ? itemA.unit : itemB.unit,
-                    itemB ? itemB.qty : 0,
-                    itemB ? itemB.price : 0,
-                    wasSum,
-                    itemA ? itemA.qty : 0,
-                    itemA ? itemA.price : 0,
-                    becSum,
-                    diff
-                ];
+                row.values = [code, itemA ? itemA.name : itemB.name, itemA ? itemA.unit : itemB.unit,
+                    itemB ? itemB.qty : 0, itemB ? itemB.price : 0, wasSum,
+                    itemA ? itemA.qty : 0, itemA ? itemA.price : 0, becSum, diff];
 
                 for (let i = 1; i <= 10; i++) {
                     const cell = row.getCell(i);
-                    const style = {
-                        font: { name: 'Aptos Narrow', size: 8 },
-                        border: true,
-                        align: (i === 1 || i === 3) ? 'center' : (i === 2 ? 'left' : 'right'),
-                        wrap: (i === 2),
-                        bg: C_WHITE // Явная белая заливка
-                    };
-                    if (isNew) style.bg = C_WHITE;
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: WHITE_FILL } };
+                    const style = { font: { name: 'Aptos Narrow', size: 8 }, border: true, align: (i === 1 || i === 3) ? 'center' : (i === 2 ? 'left' : 'right'), wrap: (i === 2) };
+                    if (isNew) style.bg = null;
                     cellInfo(cell, style);
-                    if ([6, 9, 10].includes(i)) {
-                        cell.numFmt = '#,##0.00_ ;[Red]-#,##0.00';
-                    }
+                    if ([6, 9, 10].includes(i)) cell.numFmt = '#,##0.00_ ;[Red]-#,##0.00';
                 }
                 currentRow++;
             });
@@ -789,12 +811,7 @@
                 if (row.number <= lastRow) {
                     row.eachCell(cell => {
                         if (!cell.border) {
-                            cell.border = {
-                                top: {style: 'thin', color: {argb: 'FF000000'}},
-                                left: {style: 'thin', color: {argb: 'FF000000'}},
-                                bottom: {style: 'thin', color: {argb: 'FF000000'}},
-                                right: {style: 'thin', color: {argb: 'FF000000'}}
-                            };
+                            cell.border = { top:{style:'thin', color:{argb:'FF000000'}}, left:{style:'thin', color:{argb:'FF000000'}}, bottom:{style:'thin', color:{argb:'FF000000'}}, right:{style:'thin', color:{argb:'FF000000'}} };
                         }
                     });
                 }
@@ -807,46 +824,21 @@
 
         function cellInfo(cell, opts) {
             if (opts.font) cell.font = opts.font;
-            if (opts.align) {
-                cell.alignment = { 
-                    horizontal: opts.align === 'left' ? 'left' : (opts.align === 'right' ? 'right' : 'center'), 
-                    vertical: 'middle', 
-                    wrapText: !!opts.wrap 
-                };
-            }
-            if (opts.bg) {
-                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: opts.bg } };
-            }
+            if (opts.align) cell.alignment = { horizontal: opts.align === 'left' ? 'left' : (opts.align === 'right' ? 'right' : 'center'), vertical: 'middle', wrapText: !!opts.wrap };
+            if (opts.bg && !cell.fill) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: opts.bg } };
             if (opts.fontColor) cell.font = { ...cell.font, color: { argb: opts.fontColor } };
-            if (opts.border) {
-                cell.border = {
-                    top: {style: 'thin', color: {argb: 'FF000000'}},
-                    left: {style: 'thin', color: {argb: 'FF000000'}},
-                    bottom: {style: 'thin', color: {argb: 'FF000000'}},
-                    right: {style: 'thin', color: {argb: 'FF000000'}}
-                };
-            }
+            if (opts.border && !cell.border) cell.border = { top:{style:'thin', color:{argb:'FF000000'}}, left:{style:'thin', color:{argb:'FF000000'}}, bottom:{style:'thin', color:{argb:'FF000000'}}, right:{style:'thin', color:{argb:'FF000000'}} };
         }
 
-        function setMoneyCell(ws, row, col, value, bgColor) {
+        function setMoneyCell(ws, row, col, value) {
             const cell = ws.getCell(row, col);
             cell.value = value;
             cell.numFmt = '#,##0.00_ ;[Red]-#,##0.00';
             cell.alignment = { horizontal: 'right', vertical: 'middle' };
-            if (bgColor) {
-                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
-            }
-            cell.border = {
-                top: {style: 'thin', color: {argb: 'FF000000'}},
-                left: {style: 'thin', color: {argb: 'FF000000'}},
-                bottom: {style: 'thin', color: {argb: 'FF000000'}},
-                right: {style: 'thin', color: {argb: 'FF000000'}}
-            };
+            cell.border = { top:{style:'thin', color:{argb:'FF000000'}}, left:{style:'thin', color:{argb:'FF000000'}}, bottom:{style:'thin', color:{argb:'FF000000'}}, right:{style:'thin', color:{argb:'FF000000'}} };
         }
 
-        function resetApp() {
-            location.reload();
-        }
+        function resetApp() { location.reload(); }
     </script>
 </body>
 </html>
